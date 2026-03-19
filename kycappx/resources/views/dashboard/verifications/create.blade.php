@@ -62,6 +62,12 @@
                     <x-ui.status-badge :value="$selectedService->code" tone="info" />
                 </div>
 
+                <div class="mt-5 rounded-[1.25rem] border border-slate-200/80 bg-slate-50/80 px-4 py-4 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-300">
+                    Saved your KYC bio already?
+                    <a href="{{ route('kyc.edit') }}" class="font-semibold text-slate-950 underline underline-offset-4 dark:text-slate-50">Open the KYC page</a>
+                    to keep NIN, BVN, phone, and address details ready for auto-prefill.
+                </div>
+
                 <form method="POST" action="{{ route('verifications.store') }}" class="mt-6 space-y-5">
                     @csrf
                     <input type="hidden" name="service_id" value="{{ $selectedService->id }}">
@@ -76,7 +82,7 @@
                                     :name="$field['name']"
                                     type="date"
                                     class="mt-2"
-                                    :value="old($field['name'])"
+                                    :value="old($field['name'], data_get($fieldDefaults, $field['name']))"
                                 />
                             @else
                                 <x-text-input
@@ -84,7 +90,7 @@
                                     :name="$field['name']"
                                     :type="$field['type']"
                                     class="mt-2"
-                                    :value="old($field['name'])"
+                                    :value="old($field['name'], data_get($fieldDefaults, $field['name']))"
                                     :placeholder="$field['placeholder']"
                                 />
                             @endif

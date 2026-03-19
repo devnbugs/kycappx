@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ProfileUpdateRequest;
+use App\Services\Kyc\KycStrengthService;
 use App\Services\Security\TwoFactorService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -13,8 +14,10 @@ use Illuminate\View\View;
 
 class ProfileController extends Controller
 {
-    public function __construct(private TwoFactorService $twoFactorService)
-    {
+    public function __construct(
+        private TwoFactorService $twoFactorService,
+        private KycStrengthService $kycStrength,
+    ) {
     }
 
     /**
@@ -28,6 +31,7 @@ class ProfileController extends Controller
                 ? $this->twoFactorService->qrCodeSvg($request->user(), $request->user()->two_factor_secret)
                 : null,
             'recoveryCodes' => $request->user()->two_factor_recovery_codes ?? [],
+            'kycSnapshot' => $this->kycStrength->snapshot($request->user()),
         ]);
     }
 

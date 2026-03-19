@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Dashboard;
 
 use App\Http\Controllers\Controller;
 use App\Models\FundingRequest;
+use App\Services\Providers\ProviderFeatureService;
 use App\Services\SiteSettings;
 use App\Services\Billing\Gateways\KoraGateway;
 use Illuminate\Http\JsonResponse;
@@ -14,14 +15,20 @@ use Illuminate\Support\Str;
 
 class KoraFundingController extends Controller
 {
-    public function __construct(private SiteSettings $siteSettings)
-    {
+    public function __construct(
+        private SiteSettings $siteSettings,
+        private ProviderFeatureService $providerFeatures,
+    ) {
     }
 
     public function initialize(Request $request, KoraGateway $kora): RedirectResponse|JsonResponse
     {
         if (! $this->siteSettings->current()->wallet_funding_enabled) {
             return $this->failureResponse($request, 'Wallet funding is currently disabled by the site administrator.');
+        }
+
+        if (! $this->providerFeatures->isProductEnabled('kora', 'checkout', true)) {
+            return $this->failureResponse($request, 'Kora checkout has been disabled from the admin provider controls.');
         }
 
         $data = $request->validate([

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Dashboard;
 use App\Http\Controllers\Controller;
 use App\Models\VerificationService;
 use App\Services\Billing\WalletService;
+use App\Services\Kyc\KycStrengthService;
 use App\Services\SiteSettings;
 use App\Services\Verification\VerificationOrchestrator;
 use Illuminate\Contracts\View\View;
@@ -18,7 +19,8 @@ class VerificationController extends Controller
     public function __construct(
         private WalletService $walletService,
         private SiteSettings $siteSettings,
-        private VerificationOrchestrator $verificationOrchestrator
+        private VerificationOrchestrator $verificationOrchestrator,
+        private KycStrengthService $kycStrength,
     ) {
     }
 
@@ -52,6 +54,7 @@ class VerificationController extends Controller
             'services' => $services,
             'selectedService' => $selectedService,
             'fieldBlueprints' => $selectedService ? $this->fieldBlueprintsFor($selectedService) : [],
+            'fieldDefaults' => $this->fieldDefaultsFor($user, $selectedService),
             'discountRate' => $discountRate,
             'selectedPrice' => $selectedService ? $this->priceFor($user, $selectedService) : 0,
         ]);
@@ -116,6 +119,12 @@ class VerificationController extends Controller
             'middle_name' => ['nullable', 'string', 'max:100'],
             'last_name' => ['nullable', 'string', 'max:100'],
             'dob' => ['nullable', 'date'],
+            'phone' => ['nullable', 'string', 'max:30'],
+            'address_line1' => ['nullable', 'string', 'max:255'],
+            'address_line2' => ['nullable', 'string', 'max:255'],
+            'city' => ['nullable', 'string', 'max:120'],
+            'state' => ['nullable', 'string', 'max:120'],
+            'zip' => ['nullable', 'string', 'max:20'],
         ];
 
         return match (strtoupper($service->code)) {
@@ -130,19 +139,35 @@ class VerificationController extends Controller
                 'identifier' => ['required', 'string', 'max:40'],
                 'company_name' => ['nullable', 'string', 'max:160'],
             ],
-            'TIN' => [
-                'service_id' => ['required', 'integer', 'exists:verification_services,id'],
-                'identifier' => ['required', 'string', 'max:20'],
-                'name' => ['nullable', 'string', 'max:160'],
-            ],
             'PHONE' => [
                 'service_id' => ['required', 'integer', 'exists:verification_services,id'],
                 'identifier' => ['required', 'string', 'max:20'],
             ],
-            'ACCOUNT' => [
+            'US_PHONE' => $rules + [
+                'identifier' => ['required', 'string', 'max:20'],
+            ],
+            'US_BIODATA' => [
                 'service_id' => ['required', 'integer', 'exists:verification_services,id'],
-                'account_number' => ['required', 'digits_between:10,10'],
-                'bank_code' => ['required', 'string', 'max:10'],
+                'first_name' => ['required', 'string', 'max:100'],
+                'middle_name' => ['nullable', 'string', 'max:100'],
+                'last_name' => ['required', 'string', 'max:100'],
+                'dob' => ['required', 'date'],
+                'address_line1' => ['required', 'string', 'max:255'],
+                'address_line2' => ['nullable', 'string', 'max:255'],
+                'city' => ['required', 'string', 'max:120'],
+                'state' => ['required', 'string', 'max:120'],
+                'zip' => ['nullable', 'string', 'max:20'],
+            ],
+            'US_ADDRESS' => [
+                'service_id' => ['required', 'integer', 'exists:verification_services,id'],
+                'address_line1' => ['required', 'string', 'max:255'],
+                'address_line2' => ['nullable', 'string', 'max:255'],
+                'city' => ['required', 'string', 'max:120'],
+                'state' => ['required', 'string', 'max:120'],
+                'zip' => ['required', 'string', 'max:20'],
+            ],
+            'US_SSN' => $rules + [
+                'identifier' => ['required', 'string', 'max:20'],
             ],
             default => [
                 'service_id' => ['required', 'integer', 'exists:verification_services,id'],
@@ -157,8 +182,9 @@ class VerificationController extends Controller
             'BVN' => ['identifier' => 'BVN'],
             'NIN' => ['identifier' => 'NIN'],
             'CAC' => ['identifier' => 'registration number'],
-            'TIN' => ['identifier' => 'TIN'],
             'PHONE' => ['identifier' => 'phone number'],
+            'US_PHONE' => ['identifier' => 'US phone number'],
+            'US_SSN' => ['identifier' => 'SSN'],
             default => ['identifier' => 'identifier'],
         };
     }
@@ -184,16 +210,53 @@ class VerificationController extends Controller
                 'registration_number' => $validated['identifier'],
                 'company_name' => $validated['company_name'] ?? null,
             ],
-            'TIN' => [
-                'identifier' => $validated['identifier'],
-                'name' => $validated['name'] ?? null,
-            ],
             'PHONE' => [
-                'identifier' => $validated['identifier'],
+                'phone' => $validated['identifier'],
+                'first_name' => $validated['first_name'] ?? null,
+                'middle_name' => $validated['middle_name'] ?? null,
+                'last_name' => $validated['last_name'] ?? null,
+                'dob' => $validated['dob'] ?? null,
             ],
-            'ACCOUNT' => [
-                'account_number' => $validated['account_number'],
-                'bank_code' => $validated['bank_code'],
+            'US_PHONE' => [
+                'phone' => $validated['identifier'],
+                'first_name' => $validated['first_name'] ?? null,
+                'middle_name' => $validated['middle_name'] ?? null,
+                'last_name' => $validated['last_name'] ?? null,
+                'dob' => $validated['dob'] ?? null,
+                'country' => 'US',
+            ],
+            'US_BIODATA' => [
+                'first_name' => $validated['first_name'],
+                'middle_name' => $validated['middle_name'] ?? null,
+                'last_name' => $validated['last_name'],
+                'dob' => $validated['dob'],
+                'address_line1' => $validated['address_line1'],
+                'address_line2' => $validated['address_line2'] ?? null,
+                'city' => $validated['city'],
+                'state' => $validated['state'],
+                'zip' => $validated['zip'] ?? null,
+                'country' => 'US',
+            ],
+            'US_ADDRESS' => [
+                'address_line1' => $validated['address_line1'],
+                'address_line2' => $validated['address_line2'] ?? null,
+                'city' => $validated['city'],
+                'state' => $validated['state'],
+                'zip' => $validated['zip'],
+                'country' => 'US',
+            ],
+            'US_SSN' => [
+                'ssn' => $validated['identifier'],
+                'first_name' => $validated['first_name'] ?? null,
+                'middle_name' => $validated['middle_name'] ?? null,
+                'last_name' => $validated['last_name'] ?? null,
+                'dob' => $validated['dob'] ?? null,
+                'address_line1' => $validated['address_line1'] ?? null,
+                'address_line2' => $validated['address_line2'] ?? null,
+                'city' => $validated['city'] ?? null,
+                'state' => $validated['state'] ?? null,
+                'zip' => $validated['zip'] ?? null,
+                'country' => 'US',
             ],
             default => [
                 'identifier' => $validated['identifier'],
@@ -222,21 +285,66 @@ class VerificationController extends Controller
                 ['name' => 'identifier', 'label' => 'Registration Number', 'type' => 'text', 'placeholder' => 'RC1234567', 'helper' => 'Company registration number'],
                 ['name' => 'company_name', 'label' => 'Company Name', 'type' => 'text', 'placeholder' => 'Kycappx Labs Limited', 'helper' => 'Optional but useful for reviews'],
             ],
-            'TIN' => [
-                ['name' => 'identifier', 'label' => 'TIN', 'type' => 'text', 'placeholder' => '12345678-0001', 'helper' => 'Tax Identification Number'],
-                ['name' => 'name', 'label' => 'Business or Individual Name', 'type' => 'text', 'placeholder' => 'Kycappx Labs Limited', 'helper' => 'Optional but recommended'],
-            ],
             'PHONE' => [
                 ['name' => 'identifier', 'label' => 'Phone Number', 'type' => 'text', 'placeholder' => '08030000000', 'helper' => 'Use a valid Nigerian phone number'],
             ],
-            'ACCOUNT' => [
-                ['name' => 'account_number', 'label' => 'Account Number', 'type' => 'text', 'placeholder' => '0123456789', 'helper' => '10-digit account number'],
-                ['name' => 'bank_code', 'label' => 'Bank Code', 'type' => 'text', 'placeholder' => '058', 'helper' => 'NIP or provider bank code'],
+            'US_PHONE' => [
+                ['name' => 'identifier', 'label' => 'US Phone Number', 'type' => 'text', 'placeholder' => '+14155550123', 'helper' => 'Use a valid US phone number'],
+                ['name' => 'first_name', 'label' => 'First Name', 'type' => 'text', 'placeholder' => 'Jordan', 'helper' => 'Optional but useful for phone-owner matching'],
+                ['name' => 'last_name', 'label' => 'Last Name', 'type' => 'text', 'placeholder' => 'Cole', 'helper' => 'Optional'],
+                ['name' => 'dob', 'label' => 'Date of Birth', 'type' => 'date', 'placeholder' => '', 'helper' => 'Optional, use YYYY-MM-DD'],
+            ],
+            'US_BIODATA' => [
+                ['name' => 'first_name', 'label' => 'First Name', 'type' => 'text', 'placeholder' => 'Avery', 'helper' => 'Required for biodata screening'],
+                ['name' => 'middle_name', 'label' => 'Middle Name', 'type' => 'text', 'placeholder' => 'J.', 'helper' => 'Optional'],
+                ['name' => 'last_name', 'label' => 'Last Name', 'type' => 'text', 'placeholder' => 'Smith', 'helper' => 'Required for biodata screening'],
+                ['name' => 'dob', 'label' => 'Date of Birth', 'type' => 'date', 'placeholder' => '', 'helper' => 'Required'],
+                ['name' => 'address_line1', 'label' => 'Address Line 1', 'type' => 'text', 'placeholder' => '123 Main Street', 'helper' => 'Residential address'],
+                ['name' => 'address_line2', 'label' => 'Address Line 2', 'type' => 'text', 'placeholder' => 'Apt 4B', 'helper' => 'Optional'],
+                ['name' => 'city', 'label' => 'City', 'type' => 'text', 'placeholder' => 'Houston', 'helper' => 'Required'],
+                ['name' => 'state', 'label' => 'State', 'type' => 'text', 'placeholder' => 'Texas', 'helper' => 'Required'],
+                ['name' => 'zip', 'label' => 'ZIP Code', 'type' => 'text', 'placeholder' => '77002', 'helper' => 'Optional but recommended'],
+            ],
+            'US_ADDRESS' => [
+                ['name' => 'address_line1', 'label' => 'Address Line 1', 'type' => 'text', 'placeholder' => '456 Market Street', 'helper' => 'Street address'],
+                ['name' => 'address_line2', 'label' => 'Address Line 2', 'type' => 'text', 'placeholder' => 'Suite 300', 'helper' => 'Optional'],
+                ['name' => 'city', 'label' => 'City', 'type' => 'text', 'placeholder' => 'San Francisco', 'helper' => 'Required'],
+                ['name' => 'state', 'label' => 'State', 'type' => 'text', 'placeholder' => 'California', 'helper' => 'Required'],
+                ['name' => 'zip', 'label' => 'ZIP Code', 'type' => 'text', 'placeholder' => '94105', 'helper' => 'Required'],
+            ],
+            'US_SSN' => [
+                ['name' => 'identifier', 'label' => 'SSN', 'type' => 'text', 'placeholder' => '123456789', 'helper' => 'Social Security Number'],
+                ['name' => 'first_name', 'label' => 'First Name', 'type' => 'text', 'placeholder' => 'Taylor', 'helper' => 'Required for stronger matching'],
+                ['name' => 'last_name', 'label' => 'Last Name', 'type' => 'text', 'placeholder' => 'Brown', 'helper' => 'Required for stronger matching'],
+                ['name' => 'dob', 'label' => 'Date of Birth', 'type' => 'date', 'placeholder' => '', 'helper' => 'Recommended'],
+                ['name' => 'address_line1', 'label' => 'Address Line 1', 'type' => 'text', 'placeholder' => '789 Pine Avenue', 'helper' => 'Optional but helpful for manual review'],
+                ['name' => 'city', 'label' => 'City', 'type' => 'text', 'placeholder' => 'Atlanta', 'helper' => 'Optional'],
+                ['name' => 'state', 'label' => 'State', 'type' => 'text', 'placeholder' => 'Georgia', 'helper' => 'Optional'],
+                ['name' => 'zip', 'label' => 'ZIP Code', 'type' => 'text', 'placeholder' => '30303', 'helper' => 'Optional'],
             ],
             default => [
                 ['name' => 'identifier', 'label' => 'Identifier', 'type' => 'text', 'placeholder' => 'Enter the request value', 'helper' => 'Provide the primary lookup value for this service'],
             ],
         };
+    }
+
+    private function fieldDefaultsFor($user, ?VerificationService $service = null): array
+    {
+        $defaults = $this->kycStrength->profile($user);
+
+        if (! $service) {
+            return $defaults;
+        }
+
+        $defaults['identifier'] = match (strtoupper($service->code)) {
+            'BVN' => data_get($defaults, 'bvn'),
+            'NIN' => data_get($defaults, 'nin'),
+            'PHONE', 'US_PHONE' => data_get($defaults, 'phone'),
+            'US_SSN' => data_get($defaults, 'ssn'),
+            default => data_get($defaults, 'identifier'),
+        };
+
+        return $defaults;
     }
 
     private function priceFor($user, VerificationService $service): float

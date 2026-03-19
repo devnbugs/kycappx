@@ -57,6 +57,8 @@
                 </flux:field>
             </div>
 
+            <x-security.turnstile action="register" />
+
             <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <a class="text-sm font-medium text-slate-600 underline-offset-4 transition hover:text-slate-950 hover:underline dark:text-slate-300 dark:hover:text-slate-50" href="{{ route('login') }}">
                     {{ __('Already registered?') }}

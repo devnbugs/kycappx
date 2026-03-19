@@ -1,7 +1,5 @@
 import './bootstrap';
 
-import Alpine from 'alpinejs';
-
 const STORAGE_KEY = 'kycappx.theme';
 
 const resolveIsDark = (theme) => {
@@ -72,7 +70,4 @@ window.initializeTheme = () => {
     });
 };
 
-window.Alpine = Alpine;
-
 window.initializeTheme();
-Alpine.start();

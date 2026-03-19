@@ -9,24 +9,82 @@ class ProviderConfigSeeder extends Seeder
 {
     public function run(): void
     {
-        ProviderConfig::updateOrCreate(
-            ['provider' => 'prembly'],
-            ['is_active' => false, 'priority' => 1, 'config' => ['channel' => 'identity']]
-        );
+        ProviderConfig::query()
+            ->where('provider', 'youverify')
+            ->delete();
 
         ProviderConfig::updateOrCreate(
-            ['provider' => 'youverify'],
-            ['is_active' => false, 'priority' => 2, 'config' => ['channel' => 'identity']]
+            ['provider' => 'prembly'],
+            [
+                'is_active' => false,
+                'priority' => 1,
+                'config' => [
+                    'channel' => 'identity',
+                    'mode' => 'live',
+                    'timeout_seconds' => 30,
+                    'country_scope' => ['NG', 'US'],
+                    'default_product' => 'bvn',
+                    'enabled_products' => [
+                        'bvn' => true,
+                        'nin' => true,
+                        'phone' => true,
+                        'cac' => false,
+                        'us_biodata' => true,
+                        'us_address' => true,
+                        'us_ssn' => false,
+                    ],
+                ],
+            ]
         );
 
         ProviderConfig::updateOrCreate(
             ['provider' => 'paystack'],
-            ['is_active' => false, 'priority' => 1, 'config' => ['channel' => 'payments', 'product' => 'dva']]
+            [
+                'is_active' => false,
+                'priority' => 1,
+                'config' => [
+                    'channel' => 'payments',
+                    'mode' => 'live',
+                    'timeout_seconds' => 30,
+                    'default_product' => 'dedicated_accounts',
+                    'enabled_products' => [
+                        'customers' => true,
+                        'dedicated_accounts' => true,
+                        'requery' => true,
+                        'transactions' => true,
+                        'transfer_recipients' => false,
+                        'transfers' => false,
+                        'refunds' => false,
+                        'identity' => false,
+                    ],
+                ],
+            ]
         );
 
         ProviderConfig::updateOrCreate(
             ['provider' => 'kora'],
-            ['is_active' => false, 'priority' => 2, 'config' => ['channel' => 'payments', 'product' => 'dva']]
+            [
+                'is_active' => false,
+                'priority' => 2,
+                'config' => [
+                    'channel' => 'payments',
+                    'mode' => 'live',
+                    'timeout_seconds' => 30,
+                    'default_product' => 'virtual_accounts',
+                    'enabled_products' => [
+                        'checkout' => true,
+                        'bank_transfer' => false,
+                        'virtual_accounts' => true,
+                        'account_holders' => false,
+                        'verification' => true,
+                        'virtual_cards' => false,
+                        'refunds' => false,
+                        'payouts' => false,
+                        'balances' => false,
+                        'conversions' => false,
+                    ],
+                ],
+            ]
         );
     }
 }

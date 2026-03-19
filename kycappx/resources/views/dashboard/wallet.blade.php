@@ -55,7 +55,7 @@
                 </div>
 
                 <div class="flex flex-wrap gap-3">
-                    @if ($gatewayStatus['kora'] && $siteSettings->wallet_funding_enabled)
+                    @if ($gatewayStatus['kora'] && $siteSettings->wallet_funding_enabled && $providerProducts['kora_checkout'])
                         <x-ui.button type="submit">
                             Continue to Kora Checkout
                         </x-ui.button>
@@ -71,9 +71,9 @@
                 </div>
             </form>
 
-            @unless ($gatewayStatus['kora'] && $siteSettings->wallet_funding_enabled)
+            @unless ($gatewayStatus['kora'] && $siteSettings->wallet_funding_enabled && $providerProducts['kora_checkout'])
                 <div class="mt-5 rounded-[1.5rem] border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-900 dark:border-amber-900/60 dark:bg-amber-950/50 dark:text-amber-200">
-                    {{ $siteSettings->wallet_funding_enabled ? 'Add `KORA_SECRET_KEY` and `KORA_REDIRECT_URL` to enable production wallet funding.' : 'Wallet funding has been disabled by the site administrator.' }}
+                    {{ ! $providerProducts['kora_checkout'] ? 'Kora checkout has been turned off from the admin provider controls.' : ($siteSettings->wallet_funding_enabled ? 'Add `KORA_SECRET_KEY` and `KORA_REDIRECT_URL` to enable production wallet funding.' : 'Wallet funding has been disabled by the site administrator.') }}
                 </div>
             @endunless
         </div>
@@ -115,7 +115,7 @@
             @else
                 <form method="POST" action="{{ route('wallet.accounts.store', ['provider' => 'paystack']) }}" class="mt-6">
                     @csrf
-                    <flux:button type="submit" variant="primary" color="teal" :disabled="! ($siteSettings->dva_enabled && $siteSettings->paystack_dva_enabled && $gatewayStatus['paystack'])">
+                    <flux:button type="submit" variant="primary" color="teal" :disabled="! ($siteSettings->dva_enabled && $siteSettings->paystack_dva_enabled && $gatewayStatus['paystack'] && $providerProducts['paystack_dedicated_accounts'])">
                         Assign Paystack account
                     </flux:button>
                 </form>
@@ -153,15 +153,15 @@
 
                     <div>
                         <x-input-label for="kora_bvn" value="BVN" />
-                        <x-text-input id="kora_bvn" name="bvn" type="text" class="mt-2" :value="old('bvn')" placeholder="22123456789" />
+                        <x-text-input id="kora_bvn" name="bvn" type="text" class="mt-2" :value="old('bvn', data_get(auth()->user()->kyc_profile, 'bvn'))" placeholder="22123456789" />
                     </div>
 
                     <div>
                         <x-input-label for="kora_nin" value="NIN (Optional)" />
-                        <x-text-input id="kora_nin" name="nin" type="text" class="mt-2" :value="old('nin')" placeholder="12345678901" />
+                        <x-text-input id="kora_nin" name="nin" type="text" class="mt-2" :value="old('nin', data_get(auth()->user()->kyc_profile, 'nin'))" placeholder="12345678901" />
                     </div>
 
-                    <flux:button type="submit" variant="primary" color="teal" :disabled="! ($siteSettings->dva_enabled && $siteSettings->kora_dva_enabled && $gatewayStatus['kora'])">
+                    <flux:button type="submit" variant="primary" color="teal" :disabled="! ($siteSettings->dva_enabled && $siteSettings->kora_dva_enabled && $gatewayStatus['kora'] && $providerProducts['kora_virtual_accounts'])">
                         Assign Kora account
                     </flux:button>
                 </form>

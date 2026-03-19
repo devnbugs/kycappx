@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('webhook_logs', function (Blueprint $table) {
             $table->id();
-            $table->string('provider'); // paystack, kora, prembly, youverify
+            $table->string('provider'); // paystack, kora, prembly
             $table->string('event')->nullable();
             $table->string('reference')->nullable();
 

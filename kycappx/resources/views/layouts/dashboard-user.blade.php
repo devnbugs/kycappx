@@ -4,6 +4,7 @@
         ['label' => 'Wallet', 'route' => 'wallet', 'pattern' => 'wallet*', 'icon' => 'credit-card'],
         ['label' => 'Transactions', 'route' => 'transactions', 'pattern' => 'transactions', 'icon' => 'banknotes'],
         ['label' => 'Verifications', 'route' => 'verifications.index', 'pattern' => 'verifications.*', 'icon' => 'shield-check'],
+        ['label' => 'KYC Strength', 'route' => 'kyc.edit', 'pattern' => 'kyc.*', 'icon' => 'identification'],
         ['label' => 'API Keys', 'route' => 'api.keys', 'pattern' => 'api.keys*', 'icon' => 'key'],
         ['label' => 'Profile', 'route' => 'profile.edit', 'pattern' => 'profile.*', 'icon' => 'cog-6-tooth'],
     ];
@@ -72,9 +73,11 @@
                                     'BVN' => 'identification',
                                     'NIN' => 'shield-check',
                                     'CAC' => 'building-office',
-                                    'TIN' => 'receipt-percent',
                                     'PHONE' => 'device-phone-mobile',
-                                    'ACCOUNT' => 'banknotes',
+                                    'US_PHONE' => 'device-phone-mobile',
+                                    'US_BIODATA' => 'user-circle',
+                                    'US_ADDRESS' => 'map-pin',
+                                    'US_SSN' => 'finger-print',
                                     default => 'sparkles',
                                 }" variant="mini" />
                                 <span>{{ strtoupper($service->code) }}</span>
@@ -143,6 +146,9 @@
                         <div class="flex flex-wrap items-center gap-2">
                             <a href="{{ route('wallet') }}">
                                 <flux:button variant="primary" color="teal" icon="plus-circle">Top up</flux:button>
+                            </a>
+                            <a href="{{ route('kyc.edit') }}">
+                                <flux:button variant="outline" icon="identification">KYC</flux:button>
                             </a>
                             <a href="{{ route('verifications.create') }}">
                                 <flux:button variant="outline" icon="shield-check">Run service</flux:button>

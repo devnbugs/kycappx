@@ -13,12 +13,18 @@
                 <div class="mt-6 text-sm leading-6 text-slate-600 dark:text-slate-300">
                     {{ $provider['configured'] ? 'Environment credentials are present and ready for live traffic once the provider is active.' : 'Credentials are missing from the environment, so the platform will pause or fall back instead of dispatching live requests.' }}
                 </div>
+
+                <div class="mt-5 flex flex-wrap gap-2 text-xs">
+                    <span class="badge-soft">{{ $provider['enabled_products'] }} enabled</span>
+                    <span class="badge-soft">{{ $provider['products'] }} catalog products</span>
+                </div>
             </div>
         @endforeach
     </section>
 
     <section class="grid gap-4 xl:grid-cols-2">
         @forelse ($providerConfigs as $config)
+            @php($catalog = config("services.{$config->provider}.products", []))
             <form method="POST" action="{{ route('admin.providers.update', $config) }}" class="surface-card p-6 sm:p-8">
                 @csrf
                 @method('PUT')
@@ -49,16 +55,62 @@
                         <x-text-input :id="'timeout-'.$config->id" name="timeout_seconds" type="number" min="5" max="120" class="mt-2" :value="old('timeout_seconds', data_get($config->config, 'timeout_seconds', 30))" />
                     </div>
                     <div class="md:col-span-2">
+                        <x-input-label :for="'default-product-'.$config->id" value="Default Product" />
+                        <select id="{{ 'default-product-'.$config->id }}" name="default_product" class="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100">
+                            <option value="">Select a default product</option>
+                            @foreach ($catalog as $productKey => $product)
+                                <option value="{{ $productKey }}" @selected(old('default_product', data_get($config->config, 'default_product')) === $productKey)>{{ $product['label'] }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="md:col-span-2">
                         <x-input-label :for="'notes-'.$config->id" value="Notes" />
                         <x-text-input :id="'notes-'.$config->id" name="notes" type="text" class="mt-2" :value="old('notes', data_get($config->config, 'notes'))" placeholder="Fallback after Prembly or use for manual escalation" />
                     </div>
                 </div>
 
-                <label class="mt-5 inline-flex items-center gap-3 text-sm text-slate-700 dark:text-slate-200">
-                    <input type="hidden" name="is_active" value="0">
-                    <input type="checkbox" name="is_active" value="1" class="rounded border-slate-300 text-slate-950 shadow-sm focus:ring-slate-300 dark:border-slate-600 dark:bg-slate-900 dark:text-teal-400 dark:focus:ring-teal-500" @checked(old('is_active', $config->is_active))>
-                    <span>Enable this provider for orchestration</span>
-                </label>
+                <div class="mt-5">
+                    <x-ui.toggle
+                        name="is_active"
+                        :checked="(bool) old('is_active', $config->is_active)"
+                        label="Enable this provider"
+                        description="Only active providers are eligible for orchestration or wallet flows."
+                    />
+                </div>
+
+                @if (count(data_get($config->config, 'country_scope', [])) || $config->provider === 'prembly')
+                    <div class="mt-5">
+                        <div class="text-sm font-semibold text-slate-950 dark:text-slate-50">Country Scope</div>
+                        <div class="mt-3 flex flex-wrap gap-3">
+                            @foreach (['NG' => 'Nigeria', 'US' => 'United States'] as $countryCode => $countryLabel)
+                                <label class="inline-flex items-center gap-3 rounded-full border px-4 py-2 text-sm text-slate-700 dark:text-slate-200" style="border-color: var(--ui-border); background: var(--ui-panel-strong);">
+                                    <input
+                                        type="checkbox"
+                                        name="country_scope[]"
+                                        value="{{ $countryCode }}"
+                                        class="rounded border-slate-300 text-slate-950 shadow-sm focus:ring-slate-300 dark:border-slate-600 dark:bg-slate-900 dark:text-teal-400 dark:focus:ring-teal-500"
+                                        @checked(in_array($countryCode, old('country_scope', data_get($config->config, 'country_scope', [])), true))
+                                    >
+                                    <span>{{ $countryLabel }}</span>
+                                </label>
+                            @endforeach
+                        </div>
+                    </div>
+                @endif
+
+                <div class="mt-6">
+                    <div class="text-sm font-semibold text-slate-950 dark:text-slate-50">Product Toggles</div>
+                    <div class="mt-3 grid gap-3">
+                        @foreach ($catalog as $productKey => $product)
+                            <x-ui.toggle
+                                :name="'enabled_products['.$productKey.']'"
+                                :checked="(bool) old('enabled_products.'.$productKey, data_get($config->config, 'enabled_products.'.$productKey, data_get($product, 'required', false)))"
+                                :label="$product['label']"
+                                :description="$product['description']"
+                            />
+                        @endforeach
+                    </div>
+                </div>
 
                 <div class="mt-6 flex flex-wrap gap-3">
                     <x-ui.button type="submit">Save Provider</x-ui.button>

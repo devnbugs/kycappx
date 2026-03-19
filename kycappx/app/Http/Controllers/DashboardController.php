@@ -10,6 +10,8 @@ use App\Models\VerificationService;
 use App\Models\WalletTransaction;
 use App\Services\Billing\VirtualAccountService;
 use App\Services\Billing\WalletService;
+use App\Services\Kyc\KycStrengthService;
+use App\Services\Providers\ProviderFeatureService;
 use App\Services\SiteSettings;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
@@ -19,6 +21,8 @@ class DashboardController extends Controller
     public function __construct(
         private WalletService $walletService,
         private VirtualAccountService $virtualAccounts,
+        private KycStrengthService $kycStrength,
+        private ProviderFeatureService $providerFeatures,
         private SiteSettings $siteSettings,
     ) {
     }
@@ -67,6 +71,7 @@ class DashboardController extends Controller
                 ->get(),
             'virtualAccountProviders' => $this->virtualAccounts->providers(),
             'discountRate' => $user->currentDiscountRate((float) $siteSettings->user_pro_discount_rate),
+            'kycSnapshot' => $this->kycStrength->snapshot($user),
         ]);
     }
 
@@ -89,6 +94,11 @@ class DashboardController extends Controller
             'gatewayStatus' => [
                 'kora' => filled(config('services.kora.secret_key')) && filled(config('services.kora.redirect_url')),
                 'paystack' => filled(config('services.paystack.secret_key')),
+            ],
+            'providerProducts' => [
+                'kora_checkout' => $this->providerFeatures->isProductEnabled('kora', 'checkout', true),
+                'paystack_dedicated_accounts' => $this->providerFeatures->isProductEnabled('paystack', 'dedicated_accounts', true),
+                'kora_virtual_accounts' => $this->providerFeatures->isProductEnabled('kora', 'virtual_accounts', true),
             ],
             'virtualAccounts' => DedicatedVirtualAccount::query()
                 ->where('user_id', $user->id)

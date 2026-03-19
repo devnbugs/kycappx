@@ -16,7 +16,7 @@
                 <div class="flex items-start justify-between gap-3">
                     <div>
                         <div class="text-lg font-semibold text-slate-950 dark:text-slate-50">{{ $service->code }}</div>
-                        <div class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{ number_format($service->verification_requests_count) }} requests submitted</div>
+                        <div class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{ $service->country }} · {{ strtoupper($service->type) }} · {{ number_format($service->verification_requests_count) }} requests submitted</div>
                     </div>
                     <x-ui.status-badge :value="$service->is_active ? 'Active' : 'Inactive'" :tone="$service->is_active ? 'success' : 'warning'" />
                 </div>
@@ -49,11 +49,14 @@
                     </div>
                 </div>
 
-                <label class="mt-5 inline-flex items-center gap-3 text-sm text-slate-700 dark:text-slate-200">
-                    <input type="hidden" name="is_active" value="0">
-                    <input type="checkbox" name="is_active" value="1" class="rounded border-slate-300 text-slate-950 shadow-sm focus:ring-slate-300 dark:border-slate-600 dark:bg-slate-900 dark:text-teal-400 dark:focus:ring-teal-500" @checked(old('is_active', $service->is_active))>
-                    <span>Service is active for customers</span>
-                </label>
+                <div class="mt-5">
+                    <x-ui.toggle
+                        name="is_active"
+                        :checked="(bool) old('is_active', $service->is_active)"
+                        label="Service is active for customers"
+                        description="Turn this off to hide the service from the workspace without deleting its history."
+                    />
+                </div>
 
                 <div class="mt-6 flex flex-wrap gap-3">
                     <x-ui.button type="submit">Save Service</x-ui.button>

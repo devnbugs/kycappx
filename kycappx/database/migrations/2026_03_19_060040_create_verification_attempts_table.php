@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('verification_request_id')->constrained()->cascadeOnDelete();
 
-            $table->string('provider'); // prembly, youverify
+            $table->string('provider'); // prembly
             $table->unsignedInteger('attempt_no')->default(1);
             $table->string('status')->default('processing'); // processing, success, failed
 

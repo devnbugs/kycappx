@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Services\Security\TurnstileService;
 use App\Services\SiteSettings;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
@@ -18,8 +19,10 @@ use Spatie\Permission\Models\Role;
 
 class RegisteredUserController extends Controller
 {
-    public function __construct(private SiteSettings $siteSettings)
-    {
+    public function __construct(
+        private SiteSettings $siteSettings,
+        private TurnstileService $turnstile,
+    ) {
     }
 
     /**
@@ -40,6 +43,7 @@ class RegisteredUserController extends Controller
         $settings = $this->siteSettings->current();
 
         abort_unless($settings->registration_enabled, 403, 'New account registration is currently disabled.');
+        $this->ensureTurnstile($request, 'register');
 
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
@@ -78,5 +82,20 @@ class RegisteredUserController extends Controller
         Auth::login($user);
 
         return redirect(route('dashboard', absolute: false));
+    }
+
+    private function ensureTurnstile(Request $request, string $action): void
+    {
+        $result = $this->turnstile->verify(
+            token: $request->string('cf-turnstile-response')->value(),
+            remoteIp: $request->ip(),
+            expectedAction: $action,
+        );
+
+        if (! $result['success']) {
+            throw ValidationException::withMessages([
+                'cf-turnstile-response' => $result['message'],
+            ]);
+        }
     }
 }

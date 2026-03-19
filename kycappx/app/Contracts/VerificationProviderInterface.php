@@ -10,7 +10,7 @@ interface VerificationProviderInterface
 
     public function verifyBvn(array $payload): ProviderResult;
     public function verifyNin(array $payload): ProviderResult;
+    public function verifyPhone(array $payload): ProviderResult;
 
-    // KYB / CAC (you’ll wire exact endpoints per provider docs)
     public function verifyCac(array $payload): ProviderResult;
 }

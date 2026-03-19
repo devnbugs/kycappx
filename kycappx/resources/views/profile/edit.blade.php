@@ -13,6 +13,7 @@
                 <div class="flex flex-wrap gap-2">
                     <span class="badge-soft border-white/12 bg-white/10 text-white/85">{{ $user->isUserPro() ? 'User Pro' : 'Standard User' }}</span>
                     <span class="badge-soft border-white/12 bg-white/10 text-white/85">{{ strtoupper($user->preferred_funding_provider ?? ($siteSettings->default_funding_provider ?? 'paystack')) }} preferred</span>
+                    <span class="badge-soft border-white/12 bg-white/10 text-white/85">{{ $kycSnapshot['level_label'] }}</span>
                 </div>
             </div>
         </div>
@@ -34,6 +35,20 @@
                 @endforelse
             </div>
         </flux:card>
+    </section>
+
+    <section class="surface-card p-6 sm:p-8">
+        <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+                <p class="section-kicker">KYC Strength</p>
+                <h2 class="mt-3 text-2xl font-semibold text-slate-950 dark:text-slate-50">Current profile: {{ $kycSnapshot['level_label'] }} at {{ $kycSnapshot['score'] }}%</h2>
+                <p class="mt-2 max-w-3xl text-sm leading-6 text-slate-600 dark:text-slate-300">{{ $kycSnapshot['next_step'] }}</p>
+            </div>
+
+            <a href="{{ route('kyc.edit') }}">
+                <x-ui.button>Open KYC Page</x-ui.button>
+            </a>
+        </div>
     </section>
 
     <div class="grid gap-6 xl:grid-cols-2">

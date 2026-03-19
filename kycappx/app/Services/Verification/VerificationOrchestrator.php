@@ -9,8 +9,8 @@ use App\Models\VerificationAttempt;
 use App\Models\VerificationRequest;
 use App\Models\VerificationService;
 use App\Providers\Verification\Prembly\PremblyProvider;
-use App\Providers\Verification\Youverify\YouverifyProvider;
 use App\Services\Billing\WalletService;
+use App\Services\Providers\ProviderFeatureService;
 use App\Services\SiteSettings;
 use Illuminate\Support\Str;
 use RuntimeException;
@@ -21,6 +21,7 @@ class VerificationOrchestrator
     public function __construct(
         private WalletService $walletService,
         private SiteSettings $siteSettings,
+        private ProviderFeatureService $providerFeatures,
     ) {
     }
 
@@ -53,7 +54,7 @@ class VerificationOrchestrator
             return $verificationRequest->fresh(['service']);
         }
 
-        $provider = $this->resolveProvider();
+        $provider = $this->resolveProvider($service);
 
         if (! $provider) {
             $verificationRequest->update([
@@ -154,6 +155,7 @@ class VerificationOrchestrator
         return match (strtoupper($service->code)) {
             'BVN' => $provider->verifyBvn($payload),
             'NIN' => $provider->verifyNin($payload),
+            'PHONE', 'US_PHONE' => $provider->verifyPhone($payload),
             'CAC' => $provider->verifyCac($payload),
             default => throw new RuntimeException('This verification service is not supported yet.'),
         };
@@ -161,13 +163,15 @@ class VerificationOrchestrator
 
     private function supportsAutomation(VerificationService $service): bool
     {
-        return in_array(strtoupper($service->code), ['BVN', 'NIN', 'CAC'], true);
+        return in_array(strtoupper($service->code), ['BVN', 'NIN', 'PHONE', 'US_PHONE'], true);
     }
 
-    private function resolveProvider(): ?VerificationProviderInterface
+    private function resolveProvider(VerificationService $service): ?VerificationProviderInterface
     {
+        $productKey = $this->productKeyForService($service);
         $configuredProviders = ProviderConfig::query()
             ->active()
+            ->whereIn('provider', ['prembly'])
             ->orderBy('priority')
             ->pluck('provider')
             ->all();
@@ -175,14 +179,16 @@ class VerificationOrchestrator
         if (empty($configuredProviders)) {
             $configuredProviders = array_values(array_filter([
                 filled(config('services.prembly.app_id')) && filled(config('services.prembly.secret_key')) ? 'prembly' : null,
-                filled(config('services.youverify.token')) ? 'youverify' : null,
             ]));
         }
 
         foreach ($configuredProviders as $providerName) {
+            if ($productKey && ! $this->providerFeatures->isProductEnabled($providerName, $productKey, true)) {
+                continue;
+            }
+
             $provider = match ($providerName) {
                 'prembly' => new PremblyProvider(),
-                'youverify' => new YouverifyProvider(),
                 default => null,
             };
 
@@ -192,6 +198,17 @@ class VerificationOrchestrator
         }
 
         return null;
+    }
+
+    private function productKeyForService(VerificationService $service): ?string
+    {
+        return match (strtoupper($service->code)) {
+            'BVN' => 'bvn',
+            'NIN' => 'nin',
+            'PHONE', 'US_PHONE' => 'phone',
+            'CAC' => 'cac',
+            default => null,
+        };
     }
 
     private function maskSensitivePayload(array $payload): array
@@ -206,7 +223,8 @@ class VerificationOrchestrator
             }
 
             return match ($key) {
-                'bvn', 'nin', 'registration_number' => Str::mask($value, '*', 3, max(strlen($value) - 5, 0)),
+                'bvn', 'nin', 'ssn', 'registration_number' => Str::mask($value, '*', 3, max(strlen($value) - 5, 0)),
+                'phone', 'identifier' => Str::mask($value, '*', 3, max(strlen($value) - 5, 0)),
                 default => $value,
             };
         })->all();

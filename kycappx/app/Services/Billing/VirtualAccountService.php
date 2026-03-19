@@ -6,6 +6,7 @@ use App\Models\DedicatedVirtualAccount;
 use App\Models\User;
 use App\Services\Billing\Gateways\KoraGateway;
 use App\Services\Billing\Gateways\PaystackGateway;
+use App\Services\Providers\ProviderFeatureService;
 use App\Services\SiteSettings;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
@@ -18,6 +19,7 @@ class VirtualAccountService
         private SiteSettings $siteSettings,
         private PaystackGateway $paystackGateway,
         private KoraGateway $koraGateway,
+        private ProviderFeatureService $providerFeatures,
     ) {
     }
 
@@ -30,14 +32,18 @@ class VirtualAccountService
                 'code' => 'paystack',
                 'name' => 'Paystack DVA',
                 'description' => 'Instant account assignment with webhook-based wallet credits.',
-                'enabled' => $settings->dva_enabled && $settings->paystack_dva_enabled,
+                'enabled' => $settings->dva_enabled
+                    && $settings->paystack_dva_enabled
+                    && $this->providerFeatures->isProductEnabled('paystack', 'dedicated_accounts', true),
                 'configured' => $this->paystackGateway->isConfigured(),
             ],
             [
                 'code' => 'kora',
                 'name' => 'Kora Virtual Account',
                 'description' => 'Permanent NGN virtual accounts powered by Korapay.',
-                'enabled' => $settings->dva_enabled && $settings->kora_dva_enabled,
+                'enabled' => $settings->dva_enabled
+                    && $settings->kora_dva_enabled
+                    && $this->providerFeatures->isProductEnabled('kora', 'virtual_accounts', true),
                 'configured' => $this->koraGateway->isConfigured(),
             ],
         ]);

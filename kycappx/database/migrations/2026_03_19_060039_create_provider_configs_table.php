@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('provider_configs', function (Blueprint $table) {
             $table->id();
 
-            $table->string('provider')->unique(); // prembly, youverify
+            $table->string('provider')->unique(); // prembly, paystack, kora
             $table->boolean('is_active')->default(true);
             $table->unsignedInteger('priority')->default(1); // 1 = first, 2 = fallback
 

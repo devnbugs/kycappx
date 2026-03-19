@@ -34,6 +34,9 @@
                 </div>
 
                 <div class="mt-8 flex flex-wrap gap-3">
+                    <a href="{{ route('kyc.edit') }}">
+                        <flux:button variant="outline" class="border-white/20 bg-white/10 text-white hover:bg-white/15">KYC strength</flux:button>
+                    </a>
                     <a href="{{ route('verifications.create') }}">
                         <flux:button variant="primary" color="teal" icon="shield-check">Run verification</flux:button>
                     </a>
@@ -67,6 +70,12 @@
                 <div class="text-sm text-slate-500 dark:text-slate-400">Active API keys</div>
                 <div class="mt-3 text-3xl font-semibold text-slate-950 dark:text-slate-50">{{ number_format($stats['active_api_keys']) }}</div>
                 <div class="mt-2 text-sm text-slate-600 dark:text-slate-300">Keys that can still access your account.</div>
+            </div>
+
+            <div class="metric-card">
+                <div class="text-sm text-slate-500 dark:text-slate-400">KYC strength</div>
+                <div class="mt-3 text-3xl font-semibold text-slate-950 dark:text-slate-50">{{ $kycSnapshot['level_label'] }}</div>
+                <div class="mt-2 text-sm text-slate-600 dark:text-slate-300">{{ $kycSnapshot['score'] }}% profile strength toward {{ $kycSnapshot['target_level'] }}.</div>
             </div>
 
             <div class="metric-card">

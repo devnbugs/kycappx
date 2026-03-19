@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\SiteSettingsController;
 use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\Admin\VerificationServiceController;
 use App\Http\Controllers\Dashboard\ApiKeyController;
+use App\Http\Controllers\Dashboard\KycController;
 use App\Http\Controllers\Dashboard\KoraFundingController;
 use App\Http\Controllers\Dashboard\VirtualAccountController;
 use App\Http\Controllers\Dashboard\VerificationController;
@@ -37,6 +38,11 @@ Route::middleware('auth')->group(function () {
         Route::get('/verifications', 'index')->name('verifications.index');
         Route::get('/verifications/new', 'create')->name('verifications.create');
         Route::post('/verifications', 'store')->name('verifications.store');
+    });
+
+    Route::controller(KycController::class)->group(function () {
+        Route::get('/kyc', 'edit')->name('kyc.edit');
+        Route::put('/kyc', 'update')->name('kyc.update');
     });
 
     Route::controller(ApiKeyController::class)->group(function () {

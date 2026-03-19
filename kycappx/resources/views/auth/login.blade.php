@@ -43,6 +43,8 @@
                 <flux:error name="password" />
             </flux:field>
 
+            <x-security.turnstile action="login" />
+
             <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <label for="remember_me" class="inline-flex items-center gap-3 text-sm text-slate-600 dark:text-slate-300">
                     <input id="remember_me" type="checkbox" class="rounded border-slate-300 text-slate-900 shadow-sm focus:ring-slate-300 dark:border-slate-600 dark:bg-slate-900 dark:text-teal-400 dark:focus:ring-teal-500" name="remember">

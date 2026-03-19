@@ -62,6 +62,7 @@
             radial-gradient(circle at 85% 10%, rgba(245, 158, 11, 0.14), transparent 20%),
             linear-gradient(180deg, var(--ui-bg-strong) 0%, var(--ui-bg) 100%);
         color: var(--ui-ink);
+        overflow-x: hidden;
         transition: background-color 200ms ease, color 200ms ease;
     }
 
@@ -76,6 +77,13 @@
     pre,
     .font-mono {
         font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+    }
+
+    img,
+    svg,
+    video,
+    canvas {
+        max-width: 100%;
     }
 
     ::selection {
@@ -224,5 +232,9 @@
 @layer utilities {
     .text-balance {
         text-wrap: balance;
+    }
+
+    .safe-wrap {
+        overflow-wrap: anywhere;
     }
 }
