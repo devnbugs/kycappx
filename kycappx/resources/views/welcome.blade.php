@@ -120,7 +120,7 @@
                     <div>
                         <p class="section-kicker">Ready to launch</p>
                         <h2 class="mt-3 text-3xl font-semibold text-slate-950 text-balance dark:text-slate-50">
-                            Start with a customer-facing KYC and wallet experience, then scale into the admin control plane as traffic grows.
+                            Ready to Identify!
                         </h2>
                     </div>
 

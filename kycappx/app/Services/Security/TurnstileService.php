@@ -2,7 +2,9 @@
 
 namespace App\Services\Security;
 
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Validation\ValidationException;
 
 class TurnstileService
 {
@@ -66,5 +68,20 @@ class TurnstileService
             'success' => true,
             'data' => $data,
         ];
+    }
+
+    public function ensureValidRequest(Request $request, string $action): void
+    {
+        $result = $this->verify(
+            token: $request->string('cf-turnstile-response')->value(),
+            remoteIp: $request->ip(),
+            expectedAction: $action,
+        );
+
+        if (! $result['success']) {
+            throw ValidationException::withMessages([
+                'cf-turnstile-response' => $result['message'],
+            ]);
+        }
     }
 }

@@ -79,11 +79,11 @@
                                     <span class="service-chip">Admin</span>
                                 </div>
 
-                                <p class="section-kicker mt-4">Admin Workspace</p>
-                                <h1 class="mt-2 text-2xl font-semibold text-slate-950 text-balance dark:text-white sm:text-3xl">{{ $header ?? 'Operations overview' }}</h1>
-                                <p class="mt-2 max-w-3xl text-sm leading-6 text-slate-600 dark:text-slate-300">
+                                <p class="section-kicker mt-4">{{ $header ?? 'Operations overview' }}</p>
+                                <!--h1 class="mt-2 text-2xl font-semibold text-slate-950 text-balance dark:text-white sm:text-3xl">{{ $header ?? 'Operations overview' }}</h1-->
+                                <!--p class="mt-2 max-w-3xl text-sm leading-6 text-slate-600 dark:text-slate-300">
                                     Manage users, pricing, funding providers, DVA switches, service availability, and audit visibility from one control plane.
-                                </p>
+                                </p-->
                             </div>
                         </div>
 

@@ -17,6 +17,8 @@
                 <x-input-error :messages="$errors->get('password')" class="mt-2" />
             </div>
 
+            <x-security.turnstile action="password_confirm" />
+
             <div class="flex justify-end">
                 <x-primary-button>
                     {{ __('Confirm') }}

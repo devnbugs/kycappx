@@ -13,7 +13,6 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rules;
-use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 use Spatie\Permission\Models\Role;
 
@@ -36,14 +35,14 @@ class RegisteredUserController extends Controller
     /**
      * Handle an incoming registration request.
      *
-     * @throws ValidationException
+     * @throws \Illuminate\Validation\ValidationException
      */
     public function store(Request $request): RedirectResponse
     {
         $settings = $this->siteSettings->current();
 
         abort_unless($settings->registration_enabled, 403, 'New account registration is currently disabled.');
-        $this->ensureTurnstile($request, 'register');
+        $this->turnstile->ensureValidRequest($request, 'register');
 
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
@@ -82,20 +81,5 @@ class RegisteredUserController extends Controller
         Auth::login($user);
 
         return redirect(route('dashboard', absolute: false));
-    }
-
-    private function ensureTurnstile(Request $request, string $action): void
-    {
-        $result = $this->turnstile->verify(
-            token: $request->string('cf-turnstile-response')->value(),
-            remoteIp: $request->ip(),
-            expectedAction: $action,
-        );
-
-        if (! $result['success']) {
-            throw ValidationException::withMessages([
-                'cf-turnstile-response' => $result['message'],
-            ]);
-        }
     }
 }

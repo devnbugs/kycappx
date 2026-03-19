@@ -15,8 +15,9 @@
         @endif
 
         <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <form method="POST" action="{{ route('verification.send') }}">
+            <form method="POST" action="{{ route('verification.send') }}" class="space-y-4">
                 @csrf
+                <x-security.turnstile action="email_verification" />
                 <x-primary-button>
                     {{ __('Resend Verification Email') }}
                 </x-primary-button>
