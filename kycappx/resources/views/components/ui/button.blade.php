@@ -1,11 +1,11 @@
 @props(['variant' => 'primary', 'type' => 'button'])
 
 @php
-$base = 'inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-semibold transition border';
+$base = 'inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold transition duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60';
 $variants = [
-  'primary' => 'bg-gray-900 text-white border-gray-900 hover:bg-black',
-  'secondary' => 'bg-white text-gray-900 border-gray-200 hover:bg-gray-50',
-  'danger' => 'bg-red-600 text-white border-red-600 hover:bg-red-700',
+  'primary' => 'bg-slate-950 text-white hover:-translate-y-0.5 hover:bg-slate-800 focus:ring-slate-900',
+  'secondary' => 'border border-slate-200 bg-white text-slate-800 hover:-translate-y-0.5 hover:border-slate-300 hover:bg-slate-50 focus:ring-slate-300',
+  'danger' => 'bg-rose-600 text-white hover:-translate-y-0.5 hover:bg-rose-500 focus:ring-rose-500',
 ];
 @endphp
 

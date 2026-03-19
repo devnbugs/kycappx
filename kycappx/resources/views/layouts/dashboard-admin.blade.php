@@ -1,52 +1,102 @@
-<x-layouts.app :title="$title ?? 'Admin'">
-    <div class="flex min-h-screen bg-gray-50">
-        <aside class="hidden w-72 border-r bg-white lg:block">
-            <div class="p-6 border-b">
-                <div class="text-lg font-semibold">{{ config('app.name') }}</div>
-                <div class="mt-1 text-xs text-gray-500">Admin Dashboard</div>
-            </div>
+@php
+    $navigation = [
+        ['label' => 'Overview', 'route' => 'admin.dashboard', 'pattern' => 'admin.dashboard'],
+        ['label' => 'Customers', 'route' => 'admin.customers.index', 'pattern' => 'admin.customers.*'],
+        ['label' => 'Services', 'route' => 'admin.services.index', 'pattern' => 'admin.services.*'],
+        ['label' => 'Providers', 'route' => 'admin.providers.index', 'pattern' => 'admin.providers.*'],
+        ['label' => 'Webhook Logs', 'route' => 'admin.logs.webhooks', 'pattern' => 'admin.logs.webhooks'],
+        ['label' => 'Verification Logs', 'route' => 'admin.logs.verifications', 'pattern' => 'admin.logs.verifications'],
+    ];
+@endphp
 
-            <nav class="p-4 space-y-1">
-                <x-ui.nav-link href="{{ route('admin.dashboard') }}" :active="request()->routeIs('admin.dashboard')">
-                    Overview
-                </x-ui.nav-link>
+<x-layouts.app :title="$title ?? 'Admin Workspace'">
+    <div class="min-h-screen px-4 py-4 sm:px-6 lg:px-8">
+        <div class="mx-auto grid max-w-7xl gap-4 lg:grid-cols-[300px,minmax(0,1fr)]">
+            <aside class="surface-card hidden overflow-hidden bg-slate-950 text-slate-100 lg:block">
+                <div class="flex h-full flex-col p-5">
+                    <div>
+                        <div class="flex items-center gap-3">
+                            <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10 text-lg font-bold shadow-lg">OP</div>
+                            <div>
+                                <div class="text-lg font-semibold">{{ config('app.name') }}</div>
+                                <div class="text-sm text-slate-300">Operations cockpit</div>
+                            </div>
+                        </div>
 
-                {{-- add more later --}}
-                <div class="pt-4 mt-4 border-t">
-                    <x-ui.nav-link href="{{ route('dashboard') }}" :active="false">
-                        Back to Customer
-                    </x-ui.nav-link>
-                </div>
-            </nav>
-        </aside>
+                        <div class="mt-6 rounded-[1.5rem] border border-white/10 bg-white/5 p-4">
+                            <div class="text-xs uppercase tracking-[0.24em] text-slate-400">Signed in as</div>
+                            <div class="mt-3 text-lg font-semibold text-white">{{ auth()->user()->name }}</div>
+                            <div class="mt-1 text-sm text-slate-300">{{ auth()->user()->email }}</div>
+                        </div>
+                    </div>
 
-        <div class="flex-1">
-            <header class="bg-white border-b">
-                <div class="flex items-center justify-between px-4 py-3 lg:px-8">
-                    <div class="font-semibold">{{ $header ?? 'Admin' }}</div>
+                    <nav class="mt-6 space-y-2">
+                        @foreach ($navigation as $item)
+                            <x-ui.nav-link href="{{ route($item['route']) }}" :active="request()->routeIs($item['pattern'])">
+                                {{ $item['label'] }}
+                            </x-ui.nav-link>
+                        @endforeach
+                    </nav>
 
-                    <div class="flex items-center gap-3">
-                        <span class="hidden text-sm text-gray-600 md:block">
-                            {{ auth()->user()->email }}
-                        </span>
+                    <div class="mt-auto space-y-3 pt-6">
+                        <a href="{{ route('dashboard') }}" class="block">
+                            <x-ui.button variant="secondary" class="w-full border-white/10 bg-white/5 text-white hover:bg-white/10 hover:text-white">
+                                Back to Customer View
+                            </x-ui.button>
+                        </a>
 
                         <form method="POST" action="{{ route('logout') }}">
                             @csrf
-                            <button class="text-sm font-medium text-gray-700 hover:text-gray-900">Logout</button>
+                            <x-ui.button type="submit" variant="secondary" class="w-full border-white/10 bg-transparent text-white hover:bg-white/10 hover:text-white">
+                                Sign Out
+                            </x-ui.button>
                         </form>
                     </div>
                 </div>
-            </header>
+            </aside>
 
-            <main class="p-4 lg:p-8">
+            <div class="space-y-4">
+                <header class="surface-card p-4 sm:p-6">
+                    <div class="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+                        <div>
+                            <p class="section-kicker">Admin Workspace</p>
+                            <h1 class="mt-3 text-3xl font-semibold text-slate-950 text-balance">{{ $header ?? 'Operations overview' }}</h1>
+                            <p class="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
+                                Monitor customer activity, service readiness, provider health, and delivery logs from a single operations cockpit.
+                            </p>
+                        </div>
+
+                        <a href="{{ route('dashboard') }}">
+                            <x-ui.button variant="secondary">Customer Workspace</x-ui.button>
+                        </a>
+                    </div>
+
+                    <div class="mt-5 flex gap-2 overflow-x-auto pb-1 lg:hidden">
+                        @foreach ($navigation as $item)
+                            <a
+                                href="{{ route($item['route']) }}"
+                                @class([
+                                    'whitespace-nowrap rounded-full px-4 py-2 text-sm font-semibold transition',
+                                    'bg-slate-950 text-white' => request()->routeIs($item['pattern']),
+                                    'bg-slate-100 text-slate-700 hover:bg-slate-200' => ! request()->routeIs($item['pattern']),
+                                ])
+                            >
+                                {{ $item['label'] }}
+                            </a>
+                        @endforeach
+                    </div>
+                </header>
+
                 @if (session('status'))
-                    <div class="p-3 mb-4 text-sm border rounded bg-green-50 border-green-200 text-green-800">
+                    <div class="surface-card border-emerald-200/80 bg-emerald-50/90 px-5 py-4 text-sm font-medium text-emerald-900">
                         {{ session('status') }}
                     </div>
                 @endif
 
-                {{ $slot }}
-            </main>
+                <main class="space-y-6">
+                    {{ $slot }}
+                </main>
+            </div>
         </div>
     </div>
 </x-layouts.app>

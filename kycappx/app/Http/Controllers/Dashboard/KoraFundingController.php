@@ -5,13 +5,15 @@ namespace App\Http\Controllers\Dashboard;
 use App\Http\Controllers\Controller;
 use App\Models\FundingRequest;
 use App\Services\Billing\Gateways\KoraGateway;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 
 class KoraFundingController extends Controller
 {
-    public function initialize(Request $request, KoraGateway $kora)
+    public function initialize(Request $request, KoraGateway $kora): RedirectResponse|JsonResponse
     {
         $data = $request->validate([
             'amount' => ['required', 'numeric', 'min:100'],
@@ -21,6 +23,10 @@ class KoraFundingController extends Controller
         $user = Auth::user();
         $amount = (float) $data['amount'];
         $currency = strtoupper($data['currency'] ?? 'NGN');
+
+        if (! filled(config('services.kora.secret_key')) || ! filled(config('services.kora.redirect_url'))) {
+            return $this->failureResponse($request, 'Kora funding is not configured in the environment.');
+        }
 
         $reference = 'FUNDKORA_' . Str::upper(Str::random(12));
 
@@ -46,33 +52,47 @@ class KoraFundingController extends Controller
 
         $res = $kora->initializeCheckout($payload);
 
-        if (!$res['ok']) {
-            return response()->json($res, 422);
+        if (! $res['ok']) {
+            return $this->failureResponse($request, $res['message'] ?? 'Kora initialize failed.', $res);
         }
 
-        // Your Kora response should include a checkout URL according to Checkout Redirect docs. :contentReference[oaicite:4]{index=4}
-        // Adjust the JSON path to your actual response shape.
         $checkoutUrl = data_get($res['body'], 'data.checkout_url') ?? data_get($res['body'], 'data.checkoutUrl');
 
-        if (!$checkoutUrl) {
-            return response()->json([
-                'ok' => false,
-                'message' => 'No checkout URL returned from Kora',
+        if (! $checkoutUrl) {
+            return $this->failureResponse($request, 'Kora did not return a checkout URL.', [
                 'body' => $res['body'],
-            ], 422);
+            ]);
         }
 
-        return response()->json([
-            'ok' => true,
-            'reference' => $reference,
-            'checkout_url' => $checkoutUrl,
-        ]);
+        if ($request->expectsJson()) {
+            return response()->json([
+                'ok' => true,
+                'reference' => $reference,
+                'checkout_url' => $checkoutUrl,
+            ]);
+        }
+
+        return redirect()->away($checkoutUrl);
     }
 
-    public function return(Request $request)
+    public function handleReturn(Request $request): RedirectResponse
     {
-        // User returns here after payment. Webhook is source-of-truth.
-        // You can show a "Payment processing" screen and poll funding status.
-        return redirect()->route('dashboard')->with('status', 'Payment received. Confirming...');
+        return redirect()
+            ->route('wallet')
+            ->with('status', 'Payment received. We are confirming the transaction with Kora now.');
+    }
+
+    private function failureResponse(Request $request, string $message, array $context = []): RedirectResponse|JsonResponse
+    {
+        if ($request->expectsJson()) {
+            return response()->json([
+                'ok' => false,
+                'message' => $message,
+            ] + $context, 422);
+        }
+
+        return back()
+            ->withInput()
+            ->withErrors(['amount' => $message]);
     }
 }

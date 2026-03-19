@@ -8,13 +8,13 @@ use Symfony\Component\HttpFoundation\Response;
 
 class EnsureAdmin
 {
-    /**
-     * Handle an incoming request.
-     *
-     * @param  Closure(Request): (Response)  $next
-     */
     public function handle(Request $request, Closure $next): Response
     {
+        $user = $request->user();
+
+        abort_if(! $user, 401);
+        abort_unless($user->isAdmin(), 403);
+
         return $next($request);
     }
 }

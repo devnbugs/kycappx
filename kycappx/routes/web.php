@@ -1,58 +1,59 @@
 <?php
 
+use App\Http\Controllers\Admin\AdminController;
+use App\Http\Controllers\Dashboard\ApiKeyController;
+use App\Http\Controllers\Dashboard\KoraFundingController;
+use App\Http\Controllers\Dashboard\VerificationController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\Webhooks\KoraWebhookController;
+use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     return view('welcome');
-});
+})->name('home');
 
 Route::middleware('auth')->group(function () {
-        // User dashboard
-    Route::get('/dashboard', function () {
-        return view('dashboard.home');
-    })->name('dashboard');
-    Route::get('/wallet', function () {
-        return view('dashboard.wallet');
-    })->name('wallet');
-    Route::get('/transactions', function () {
-        return view('dashboard.transactions');
-    })->name('transactions');
+    Route::controller(DashboardController::class)->group(function () {
+        Route::get('/dashboard', 'index')->name('dashboard');
+        Route::get('/wallet', 'wallet')->name('wallet');
+        Route::get('/transactions', 'transactions')->name('transactions');
+    });
 
-    Route::get('/verifications', function () {
-        return view('dashboard.verifications.index');
-    })->name('verifications.index');
-    Route::get('/verifications/new', function () {
-        return view('dashboard.verifications.create');
-    })->name('verifications.create');
+    Route::post('/wallet/fund/kora', [KoraFundingController::class, 'initialize'])->name('wallet.fund.kora');
+    Route::get('/wallet/fund/kora/return', [KoraFundingController::class, 'handleReturn'])->name('wallet.fund.kora.return');
 
-    Route::get('/api-keys', function () {
-        return view('dashboard.api-keys');
-    })->name('api.keys');
+    Route::controller(VerificationController::class)->group(function () {
+        Route::get('/verifications', 'index')->name('verifications.index');
+        Route::get('/verifications/new', 'create')->name('verifications.create');
+        Route::post('/verifications', 'store')->name('verifications.store');
+    });
 
-    // Admin dashboard
-    Route::prefix('admin')->middleware('admin')->group(function () {
-        Route::get('/', function () {
-            return view('admin.home');
-        })->name('admin.home');
+    Route::controller(ApiKeyController::class)->group(function () {
+        Route::get('/api-keys', 'index')->name('api.keys');
+        Route::post('/api-keys', 'store')->name('api.keys.store');
+        Route::delete('/api-keys/{apiKey}', 'destroy')->name('api.keys.destroy');
+    });
 
-        Route::get('/customers', function () {
-            return view('admin.customers.index');
-        })->name('admin.customers');
-        Route::get('/services', function () {
-            return view('admin.services.index');
-        })->name('admin.services');
-        Route::get('/providers', function () {
-            return view('admin.providers.index');
-        })->name('admin.providers');
+    Route::controller(ProfileController::class)->group(function () {
+        Route::get('/profile', 'edit')->name('profile.edit');
+        Route::patch('/profile', 'update')->name('profile.update');
+        Route::delete('/profile', 'destroy')->name('profile.destroy');
+    });
 
-        Route::get('/logs/webhooks', function () {
-            return view('admin.logs.webhooks');
-        })->name('admin.logs.webhooks');
-        Route::get('/logs/verifications', function () {
-            return view('admin.logs.verifications');
-        })->name('admin.logs.verifications');
+    Route::prefix('admin')->name('admin.')->middleware('admin')->controller(AdminController::class)->group(function () {
+        Route::get('/', 'dashboard')->name('dashboard');
+        Route::get('/customers', 'customers')->name('customers.index');
+        Route::get('/services', 'services')->name('services.index');
+        Route::get('/providers', 'providers')->name('providers.index');
+        Route::get('/logs/webhooks', 'webhookLogs')->name('logs.webhooks');
+        Route::get('/logs/verifications', 'verificationLogs')->name('logs.verifications');
     });
 });
+
+Route::post('/webhooks/kora', [KoraWebhookController::class, 'handle'])
+    ->withoutMiddleware([ValidateCsrfToken::class])
+    ->name('webhooks.kora');
 
 require __DIR__.'/auth.php';
