@@ -4,7 +4,7 @@
             <p class="section-kicker">Get Started</p>
             <h1 class="mt-3 text-3xl font-semibold text-slate-950 dark:text-slate-50">Create your Kycappx workspace.</h1>
             <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                Launch a customer account with wallet funding, service access, account cards, and admin-upgrade paths ready from day one.
+                Join the Space
             </p>
         </div>
 

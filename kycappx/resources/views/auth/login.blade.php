@@ -5,11 +5,11 @@
                 <p class="section-kicker">Welcome Back</p>
                 <h1 class="mt-3 text-3xl font-semibold text-slate-950 dark:text-slate-50">Sign in to your workspace.</h1>
                 <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                    Manage wallet balances, dedicated virtual accounts, verification requests, and API access from a single responsive surface.
+                    Access Unlimited Features
                 </p>
             </div>
 
-            <span class="badge-soft">Desktop, phone, tab</span>
+            <span class="badge-soft">Auth</span>
         </div>
 
         <x-auth-session-status :status="session('status')" />

@@ -7,7 +7,7 @@
         {{ $attributes->merge(['class' => 'theme-toggle']) }}
     >
         <flux:icon icon="moon" variant="mini" />
-        <span class="theme-toggle__hint">Theme</span>
+        <span class="theme-toggle__hint"></span>
         <span x-text="theme === 'dark' ? 'Dark' : (theme === 'light' ? 'Light' : 'Auto')"></span>
     </button>
 @endif
