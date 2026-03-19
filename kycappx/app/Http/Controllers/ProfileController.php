@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ProfileUpdateRequest;
+use App\Services\Security\TwoFactorService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -12,13 +13,21 @@ use Illuminate\View\View;
 
 class ProfileController extends Controller
 {
+    public function __construct(private TwoFactorService $twoFactorService)
+    {
+    }
+
     /**
      * Display the user's profile form.
      */
     public function edit(Request $request): View
     {
         return view('profile.edit', [
-            'user' => $request->user(),
+            'user' => $request->user()->loadMissing('socialAccounts'),
+            'twoFactorQrCode' => $request->user()->two_factor_secret
+                ? $this->twoFactorService->qrCodeSvg($request->user(), $request->user()->two_factor_secret)
+                : null,
+            'recoveryCodes' => $request->user()->two_factor_recovery_codes ?? [],
         ]);
     }
 
@@ -34,6 +43,7 @@ class ProfileController extends Controller
             'security_alerts' => (bool) data_get($validated, 'settings.security_alerts', false),
             'monthly_reports' => (bool) data_get($validated, 'settings.monthly_reports', false),
             'marketing_emails' => (bool) data_get($validated, 'settings.marketing_emails', false),
+            'login_with_google' => (bool) data_get($request->user()->settings, 'login_with_google', true),
         ];
 
         $request->user()->fill($validated);

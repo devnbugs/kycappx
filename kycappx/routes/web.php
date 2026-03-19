@@ -7,10 +7,13 @@ use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\Admin\VerificationServiceController;
 use App\Http\Controllers\Dashboard\ApiKeyController;
 use App\Http\Controllers\Dashboard\KoraFundingController;
+use App\Http\Controllers\Dashboard\VirtualAccountController;
 use App\Http\Controllers\Dashboard\VerificationController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\Profile\TwoFactorController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Webhooks\KoraWebhookController;
+use App\Http\Controllers\Webhooks\PaystackWebhookController;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Support\Facades\Route;
 
@@ -27,6 +30,8 @@ Route::middleware('auth')->group(function () {
 
     Route::post('/wallet/fund/kora', [KoraFundingController::class, 'initialize'])->name('wallet.fund.kora');
     Route::get('/wallet/fund/kora/return', [KoraFundingController::class, 'handleReturn'])->name('wallet.fund.kora.return');
+    Route::post('/wallet/accounts/{provider}', [VirtualAccountController::class, 'store'])->name('wallet.accounts.store');
+    Route::post('/wallet/accounts/{dedicatedVirtualAccount}/requery', [VirtualAccountController::class, 'requery'])->name('wallet.accounts.requery');
 
     Route::controller(VerificationController::class)->group(function () {
         Route::get('/verifications', 'index')->name('verifications.index');
@@ -45,6 +50,12 @@ Route::middleware('auth')->group(function () {
         Route::patch('/profile', 'update')->name('profile.update');
         Route::post('/profile/theme', 'updateTheme')->name('profile.theme');
         Route::delete('/profile', 'destroy')->name('profile.destroy');
+    });
+
+    Route::controller(TwoFactorController::class)->group(function () {
+        Route::post('/profile/two-factor', 'store')->name('profile.two-factor.store');
+        Route::put('/profile/two-factor', 'update')->name('profile.two-factor.update');
+        Route::delete('/profile/two-factor', 'destroy')->name('profile.two-factor.destroy');
     });
 
     Route::prefix('admin')->name('admin.')->middleware('admin')->group(function () {
@@ -82,5 +93,9 @@ Route::middleware('auth')->group(function () {
 Route::post('/webhooks/kora', [KoraWebhookController::class, 'handle'])
     ->withoutMiddleware([ValidateCsrfToken::class])
     ->name('webhooks.kora');
+
+Route::post('/webhooks/paystack', [PaystackWebhookController::class, 'handle'])
+    ->withoutMiddleware([ValidateCsrfToken::class])
+    ->name('webhooks.paystack');
 
 require __DIR__.'/auth.php';

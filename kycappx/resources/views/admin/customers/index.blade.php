@@ -68,6 +68,10 @@
                             <td class="px-6 py-4">
                                 <div class="font-semibold text-slate-950 dark:text-slate-50">{{ $customer->name }}</div>
                                 <div class="text-xs text-slate-500 dark:text-slate-400">{{ '@'.$customer->username }} · {{ $customer->email }}</div>
+                                <div class="mt-2 flex flex-wrap gap-2 text-xs">
+                                    <span class="badge-soft">{{ $customer->dedicatedVirtualAccounts->count() }} DVA</span>
+                                    <span class="badge-soft">{{ $customer->socialAccounts->count() }} social</span>
+                                </div>
                             </td>
                             <td class="px-6 py-4 text-slate-600 dark:text-slate-300">{{ $customer->getRoleNames()->implode(', ') ?: 'Unassigned' }}</td>
                             <td class="px-6 py-4">

@@ -53,7 +53,10 @@
                         <p class="section-kicker">Request Details</p>
                         <h2 class="mt-3 text-2xl font-semibold text-slate-950 dark:text-slate-50">{{ $selectedService->name }}</h2>
                         <p class="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                            Fill in the required details below. Automated requests bill <span class="font-semibold text-slate-950 dark:text-slate-50">NGN {{ number_format((float) $selectedService->default_price, 2) }}</span> on success.
+                            Fill in the required details below. Automated requests bill <span class="font-semibold text-slate-950 dark:text-slate-50">NGN {{ number_format((float) $selectedPrice, 2) }}</span> on success.
+                            @if ($discountRate > 0)
+                                <span class="mt-1 inline-flex items-center rounded-full bg-teal-50 px-3 py-1 text-xs font-semibold text-teal-800 dark:bg-teal-500/10 dark:text-teal-200">{{ rtrim(rtrim(number_format($discountRate, 2), '0'), '.') }}% user discount applied</span>
+                            @endif
                         </p>
                     </div>
                     <x-ui.status-badge :value="$selectedService->code" tone="info" />

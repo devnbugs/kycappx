@@ -64,6 +64,16 @@
                 <x-input-error class="mt-2" :messages="$errors->get('theme_preference')" />
             </div>
 
+            <div>
+                <x-input-label for="preferred_funding_provider" :value="__('Preferred Funding Provider')" />
+                <select id="preferred_funding_provider" name="preferred_funding_provider" class="mt-1 block w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100">
+                    @foreach (['paystack' => 'Paystack DVA', 'kora' => 'Kora Virtual Account'] as $value => $label)
+                        <option value="{{ $value }}" @selected(old('preferred_funding_provider', $user->preferred_funding_provider ?? $siteSettings->default_funding_provider) === $value)>{{ $label }}</option>
+                    @endforeach
+                </select>
+                <x-input-error class="mt-2" :messages="$errors->get('preferred_funding_provider')" />
+            </div>
+
             @if ($user instanceof \Illuminate\Contracts\Auth\MustVerifyEmail && ! $user->hasVerifiedEmail())
                 <div class="md:col-span-2">
                     <div>

@@ -26,6 +26,16 @@
                         <x-input-error :messages="$errors->get('site_tagline')" class="mt-2" />
                     </div>
                     <div>
+                        <x-input-label for="logo_text" value="Logo Placeholder Text" />
+                        <x-text-input id="logo_text" name="logo_text" type="text" class="mt-2 uppercase" :value="old('logo_text', $settings->logo_text)" />
+                        <x-input-error :messages="$errors->get('logo_text')" class="mt-2" />
+                    </div>
+                    <div>
+                        <x-input-label for="header_notice" value="Header Notice" />
+                        <x-text-input id="header_notice" name="header_notice" type="text" class="mt-2" :value="old('header_notice', $settings->header_notice)" />
+                        <x-input-error :messages="$errors->get('header_notice')" class="mt-2" />
+                    </div>
+                    <div>
                         <x-input-label for="support_email" value="Support Email" />
                         <x-text-input id="support_email" name="support_email" type="email" class="mt-2" :value="old('support_email', $settings->support_email)" />
                         <x-input-error :messages="$errors->get('support_email')" class="mt-2" />
@@ -48,6 +58,20 @@
                             @endforeach
                         </select>
                         <x-input-error :messages="$errors->get('default_theme')" class="mt-2" />
+                    </div>
+                    <div>
+                        <x-input-label for="default_funding_provider" value="Default Funding Provider" />
+                        <select id="default_funding_provider" name="default_funding_provider" class="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100">
+                            @foreach (['paystack' => 'Paystack', 'kora' => 'Kora'] as $value => $label)
+                                <option value="{{ $value }}" @selected(old('default_funding_provider', $settings->default_funding_provider) === $value)>{{ $label }}</option>
+                            @endforeach
+                        </select>
+                        <x-input-error :messages="$errors->get('default_funding_provider')" class="mt-2" />
+                    </div>
+                    <div>
+                        <x-input-label for="user_pro_discount_rate" value="User Pro Discount Rate (%)" />
+                        <x-text-input id="user_pro_discount_rate" name="user_pro_discount_rate" type="number" min="0" max="100" step="0.01" class="mt-2" :value="old('user_pro_discount_rate', $settings->user_pro_discount_rate)" />
+                        <x-input-error :messages="$errors->get('user_pro_discount_rate')" class="mt-2" />
                     </div>
                 </div>
             </div>
@@ -74,6 +98,26 @@
                         <input type="hidden" name="dark_mode_enabled" value="0">
                         <input type="checkbox" name="dark_mode_enabled" value="1" class="rounded border-slate-300 text-slate-950 shadow-sm focus:ring-slate-300 dark:border-slate-600 dark:bg-slate-900 dark:text-teal-400 dark:focus:ring-teal-500" @checked(old('dark_mode_enabled', $settings->dark_mode_enabled))>
                         <span>Expose the dark mode switch to users</span>
+                    </label>
+                    <label class="inline-flex items-center gap-3 text-sm text-slate-700 dark:text-slate-200">
+                        <input type="hidden" name="google_auth_enabled" value="0">
+                        <input type="checkbox" name="google_auth_enabled" value="1" class="rounded border-slate-300 text-slate-950 shadow-sm focus:ring-slate-300 dark:border-slate-600 dark:bg-slate-900 dark:text-teal-400 dark:focus:ring-teal-500" @checked(old('google_auth_enabled', $settings->google_auth_enabled))>
+                        <span>Allow sign in and sign up with Google</span>
+                    </label>
+                    <label class="inline-flex items-center gap-3 text-sm text-slate-700 dark:text-slate-200">
+                        <input type="hidden" name="dva_enabled" value="0">
+                        <input type="checkbox" name="dva_enabled" value="1" class="rounded border-slate-300 text-slate-950 shadow-sm focus:ring-slate-300 dark:border-slate-600 dark:bg-slate-900 dark:text-teal-400 dark:focus:ring-teal-500" @checked(old('dva_enabled', $settings->dva_enabled))>
+                        <span>Enable dedicated virtual account features</span>
+                    </label>
+                    <label class="inline-flex items-center gap-3 text-sm text-slate-700 dark:text-slate-200">
+                        <input type="hidden" name="paystack_dva_enabled" value="0">
+                        <input type="checkbox" name="paystack_dva_enabled" value="1" class="rounded border-slate-300 text-slate-950 shadow-sm focus:ring-slate-300 dark:border-slate-600 dark:bg-slate-900 dark:text-teal-400 dark:focus:ring-teal-500" @checked(old('paystack_dva_enabled', $settings->paystack_dva_enabled))>
+                        <span>Enable Paystack dedicated accounts</span>
+                    </label>
+                    <label class="inline-flex items-center gap-3 text-sm text-slate-700 dark:text-slate-200">
+                        <input type="hidden" name="kora_dva_enabled" value="0">
+                        <input type="checkbox" name="kora_dva_enabled" value="1" class="rounded border-slate-300 text-slate-950 shadow-sm focus:ring-slate-300 dark:border-slate-600 dark:bg-slate-900 dark:text-teal-400 dark:focus:ring-teal-500" @checked(old('kora_dva_enabled', $settings->kora_dva_enabled))>
+                        <span>Enable Kora virtual accounts</span>
                     </label>
                 </div>
 

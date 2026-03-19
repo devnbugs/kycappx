@@ -11,30 +11,47 @@ use App\Models\VerificationService;
 use App\Providers\Verification\Prembly\PremblyProvider;
 use App\Providers\Verification\Youverify\YouverifyProvider;
 use App\Services\Billing\WalletService;
+use App\Services\SiteSettings;
 use Illuminate\Support\Str;
 use RuntimeException;
 use Throwable;
 
 class VerificationOrchestrator
 {
-    public function __construct(private WalletService $walletService)
-    {
+    public function __construct(
+        private WalletService $walletService,
+        private SiteSettings $siteSettings,
+    ) {
     }
 
     public function submit(User $user, VerificationService $service, array $payload): VerificationRequest
     {
         $reference = 'VER_'.Str::upper(Str::random(14));
         $maskedPayload = $this->maskSensitivePayload($payload);
+        $discountRate = $user->currentDiscountRate((float) $this->siteSettings->current()->user_pro_discount_rate);
+        $customerPrice = round(max(0, (float) $service->default_price * (1 - ($discountRate / 100))), 2);
 
         $verificationRequest = VerificationRequest::create([
             'user_id' => $user->id,
             'verification_service_id' => $service->id,
             'reference' => $reference,
             'status' => 'processing',
-            'customer_price' => $service->default_price,
+            'customer_price' => $customerPrice,
             'provider_cost' => $service->default_cost,
             'request_payload' => $maskedPayload,
         ]);
+
+        if (! $this->supportsAutomation($service)) {
+            $verificationRequest->update([
+                'status' => 'manual_review',
+                'normalized_response' => [
+                    'message' => 'This service is available in the workspace, but automation is still being completed.',
+                ],
+                'completed_at' => now(),
+            ]);
+
+            return $verificationRequest->fresh(['service']);
+        }
 
         $provider = $this->resolveProvider();
 
@@ -84,15 +101,18 @@ class VerificationOrchestrator
         $status = $result->ok ? 'success' : 'failed';
         $errorMessage = $result->error;
 
-        if ($result->ok && (float) $service->default_price > 0) {
+        if ($result->ok && $customerPrice > 0) {
             try {
                 $this->walletService->debit(
                     userId: $user->id,
-                    amount: (float) $service->default_price,
+                    amount: $customerPrice,
                     reference: 'BILL_'.$verificationRequest->reference,
                     source: 'verification',
                     description: sprintf('%s verification', $service->name),
-                    meta: ['provider' => $provider->providerName()]
+                    meta: [
+                        'provider' => $provider->providerName(),
+                        'discount_rate' => $discountRate,
+                    ]
                 );
             } catch (Throwable $exception) {
                 report($exception);
@@ -137,6 +157,11 @@ class VerificationOrchestrator
             'CAC' => $provider->verifyCac($payload),
             default => throw new RuntimeException('This verification service is not supported yet.'),
         };
+    }
+
+    private function supportsAutomation(VerificationService $service): bool
+    {
+        return in_array(strtoupper($service->code), ['BVN', 'NIN', 'CAC'], true);
     }
 
     private function resolveProvider(): ?VerificationProviderInterface

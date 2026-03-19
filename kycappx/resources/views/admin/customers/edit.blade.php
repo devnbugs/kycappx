@@ -88,6 +88,15 @@
                         <x-input-error :messages="$errors->get('theme_preference')" class="mt-2" />
                     </div>
                     <div>
+                        <x-input-label for="preferred_funding_provider" value="Preferred Funding Provider" />
+                        <select id="preferred_funding_provider" name="preferred_funding_provider" class="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100">
+                            @foreach (['paystack' => 'Paystack', 'kora' => 'Kora'] as $value => $label)
+                                <option value="{{ $value }}" @selected(old('preferred_funding_provider', $customer->preferred_funding_provider) === $value)>{{ $label }}</option>
+                            @endforeach
+                        </select>
+                        <x-input-error :messages="$errors->get('preferred_funding_provider')" class="mt-2" />
+                    </div>
+                    <div>
                         <x-input-label value="Role Access" />
                         <div class="mt-2 grid gap-2 rounded-[1.5rem] border border-slate-200/80 p-4 dark:border-slate-700">
                             @foreach ($roles as $role)
@@ -116,6 +125,11 @@
                         <x-input-label for="password_confirmation" value="Confirm Password" />
                         <x-text-input id="password_confirmation" name="password_confirmation" type="password" class="mt-2" />
                     </div>
+                    <div>
+                        <x-input-label for="service_discount_rate" value="Service Discount Rate (%)" />
+                        <x-text-input id="service_discount_rate" name="service_discount_rate" type="number" min="0" max="100" step="0.01" class="mt-2" :value="old('service_discount_rate', $customer->service_discount_rate)" />
+                        <x-input-error :messages="$errors->get('service_discount_rate')" class="mt-2" />
+                    </div>
                 </div>
 
                 @php($settings = old('settings', $customer->settingsPayload()))
@@ -139,6 +153,11 @@
                         <input type="hidden" name="deactivate_api_keys" value="0">
                         <input type="checkbox" name="deactivate_api_keys" value="1" class="rounded border-slate-300 text-slate-950 shadow-sm focus:ring-slate-300 dark:border-slate-600 dark:bg-slate-900 dark:text-teal-400 dark:focus:ring-teal-500">
                         <span>Deactivate all current API keys on save</span>
+                    </label>
+                    <label class="inline-flex items-center gap-3 text-sm text-slate-700 dark:text-slate-200">
+                        <input type="hidden" name="reset_two_factor" value="0">
+                        <input type="checkbox" name="reset_two_factor" value="1" class="rounded border-slate-300 text-slate-950 shadow-sm focus:ring-slate-300 dark:border-slate-600 dark:bg-slate-900 dark:text-teal-400 dark:focus:ring-teal-500">
+                        <span>Reset two-factor authentication</span>
                     </label>
                 </div>
             </div>
@@ -247,6 +266,45 @@
                         @endforelse
                     </tbody>
                 </table>
+            </div>
+        </div>
+    </section>
+
+    <section class="grid gap-4 xl:grid-cols-2">
+        <div class="surface-card p-6 sm:p-8">
+            <p class="section-kicker">Dedicated Accounts</p>
+            <div class="mt-5 space-y-3">
+                @forelse ($customer->dedicatedVirtualAccounts as $account)
+                    <div class="rounded-[1.5rem] border border-slate-200/80 bg-slate-50/80 p-4 dark:border-white/10 dark:bg-white/5">
+                        <div class="flex items-center justify-between gap-3">
+                            <div>
+                                <div class="font-semibold text-slate-950 dark:text-white">{{ strtoupper($account->provider) }}</div>
+                                <div class="mt-1 font-mono text-sm text-slate-600 dark:text-slate-300">{{ $account->account_number ?: 'Pending assignment' }}</div>
+                            </div>
+                            <x-ui.status-badge :value="$account->status" :tone="$account->status === 'active' ? 'success' : 'warning'" />
+                        </div>
+                    </div>
+                @empty
+                    <div class="rounded-[1.5rem] border border-dashed border-slate-300 bg-slate-50 p-5 text-sm text-slate-500 dark:border-white/10 dark:bg-white/5 dark:text-slate-300">
+                        No dedicated accounts assigned to this user yet.
+                    </div>
+                @endforelse
+            </div>
+        </div>
+
+        <div class="surface-card p-6 sm:p-8">
+            <p class="section-kicker">Linked Social Accounts</p>
+            <div class="mt-5 space-y-3">
+                @forelse ($customer->socialAccounts as $socialAccount)
+                    <div class="rounded-[1.5rem] border border-slate-200/80 bg-slate-50/80 p-4 dark:border-white/10 dark:bg-white/5">
+                        <div class="font-semibold text-slate-950 dark:text-white">{{ ucfirst($socialAccount->provider) }}</div>
+                        <div class="mt-1 text-sm text-slate-600 dark:text-slate-300">{{ $socialAccount->provider_email ?: 'No provider email stored' }}</div>
+                    </div>
+                @empty
+                    <div class="rounded-[1.5rem] border border-dashed border-slate-300 bg-slate-50 p-5 text-sm text-slate-500 dark:border-white/10 dark:bg-white/5 dark:text-slate-300">
+                        No social sign-ins linked to this user yet.
+                    </div>
+                @endforelse
             </div>
         </div>
     </section>

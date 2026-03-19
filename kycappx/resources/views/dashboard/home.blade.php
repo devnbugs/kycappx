@@ -1,22 +1,44 @@
+@php
+    $accountsByProvider = $virtualAccounts->keyBy('provider');
+@endphp
+
 <x-layouts.dashboard-user title="Dashboard" header="Command Center">
-    <section class="grid gap-4 xl:grid-cols-[1.3fr,0.7fr]">
-        <div class="surface-card relative overflow-hidden bg-slate-950 p-8 text-white">
+    <section class="grid gap-4 xl:grid-cols-[1.25fr,0.75fr]">
+        <div class="hero-tile surface-card relative overflow-hidden p-8 text-white">
             <div class="absolute -right-10 top-0 h-48 w-48 rounded-full bg-amber-300/20 blur-3xl"></div>
             <div class="absolute bottom-0 left-0 h-52 w-52 rounded-full bg-teal-400/20 blur-3xl"></div>
 
             <div class="relative">
-                <p class="section-kicker !text-teal-200">Daily Ops</p>
-                <h2 class="mt-3 text-3xl font-semibold text-balance">Everything that needs attention is visible in one pass.</h2>
+                <div class="flex flex-wrap items-center gap-2">
+                    <span class="badge-soft border-white/10 bg-white/10 text-white/85">{{ auth()->user()->isUserPro() ? 'User Pro' : 'Standard User' }}</span>
+                    @if ($discountRate > 0)
+                        <span class="badge-soft border-white/10 bg-white/10 text-white/85">{{ rtrim(rtrim(number_format($discountRate, 2), '0'), '.') }}% service discount</span>
+                    @endif
+                </div>
+
+                <h2 class="mt-5 max-w-3xl text-3xl font-semibold text-balance">Everything that needs attention is visible in one pass.</h2>
                 <p class="mt-3 max-w-2xl text-sm leading-6 text-slate-200/80">
-                    Track wallet balance, recent verification activity, and API readiness without jumping between disconnected pages.
+                    Track wallet balance, provision dedicated virtual accounts, launch verification runs, and review API readiness without leaving the workspace.
                 </p>
+
+                <div class="mt-8 grid gap-4 sm:grid-cols-2">
+                    <div class="rounded-[1.5rem] border border-white/10 bg-white/10 p-5">
+                        <div class="text-sm text-white/60">Available balance</div>
+                        <div class="mt-2 text-4xl font-semibold">NGN {{ number_format($stats['wallet_balance'], 2) }}</div>
+                    </div>
+                    <div class="rounded-[1.5rem] border border-white/10 bg-white/10 p-5">
+                        <div class="text-sm text-white/60">Account cards</div>
+                        <div class="mt-2 text-4xl font-semibold">{{ $virtualAccounts->count() }}</div>
+                        <div class="mt-2 text-sm text-white/65">Paystack and Kora DVA provisioning</div>
+                    </div>
+                </div>
 
                 <div class="mt-8 flex flex-wrap gap-3">
                     <a href="{{ route('verifications.create') }}">
-                        <x-ui.button>Run Verification</x-ui.button>
+                        <flux:button variant="primary" color="teal" icon="shield-check">Run verification</flux:button>
                     </a>
                     <a href="{{ route('wallet') }}">
-                        <x-ui.button variant="secondary">Fund Wallet</x-ui.button>
+                        <flux:button variant="outline" class="border-white/20 bg-white/10 text-white hover:bg-white/15">Manage wallet</flux:button>
                     </a>
                 </div>
             </div>
@@ -46,7 +68,56 @@
                 <div class="mt-3 text-3xl font-semibold text-slate-950 dark:text-slate-50">{{ number_format($stats['active_api_keys']) }}</div>
                 <div class="mt-2 text-sm text-slate-600 dark:text-slate-300">Keys that can still access your account.</div>
             </div>
+
+            <div class="metric-card">
+                <div class="text-sm text-slate-500 dark:text-slate-400">Preferred funding</div>
+                <div class="mt-3 text-3xl font-semibold text-slate-950 dark:text-slate-50">{{ strtoupper(auth()->user()->preferred_funding_provider ?? ($siteSettings->default_funding_provider ?? 'paystack')) }}</div>
+                <div class="mt-2 text-sm text-slate-600 dark:text-slate-300">Your default provider for DVA and funding flows.</div>
+            </div>
         </div>
+    </section>
+
+    <section class="grid gap-4 lg:grid-cols-2">
+        @foreach ($virtualAccountProviders as $provider)
+            @php($account = $accountsByProvider->get($provider['code']))
+            <div class="{{ $account?->account_number ? 'account-card' : 'surface-card p-6 sm:p-8' }}">
+                <div class="flex items-start justify-between gap-4">
+                    <div>
+                        <div class="text-sm {{ $account?->account_number ? 'text-white/60' : 'text-slate-500 dark:text-slate-400' }}">{{ $provider['name'] }}</div>
+                        <div class="mt-2 text-2xl font-semibold {{ $account?->account_number ? 'text-white' : 'text-slate-950 dark:text-white' }}">
+                            {{ $account?->account_number ?: 'No account card yet' }}
+                        </div>
+                        <div class="mt-2 text-sm {{ $account?->account_number ? 'text-white/70' : 'text-slate-600 dark:text-slate-300' }}">
+                            {{ $account?->bank_name ?: $provider['description'] }}
+                        </div>
+                    </div>
+                    <x-ui.status-badge :value="$account?->status ?? ($provider['enabled'] ? 'Ready' : 'Disabled')" :tone="match ($account?->status ?? null) {
+                        'active' => 'success',
+                        'pending' => 'warning',
+                        'failed' => 'danger',
+                        default => $provider['enabled'] ? 'info' : 'warning',
+                    }" />
+                </div>
+
+                @if ($account?->account_name)
+                    <div class="mt-6 grid gap-2 text-sm {{ $account?->account_number ? 'text-white/80' : 'text-slate-600 dark:text-slate-300' }}">
+                        <div>Account Name: <span class="font-semibold">{{ $account->account_name }}</span></div>
+                        <div>Provider Ref: <span class="font-mono text-xs">{{ $account->provider_reference ?: 'Pending' }}</span></div>
+                    </div>
+                @endif
+
+                <div class="mt-6 flex flex-wrap gap-3">
+                    <a href="{{ route('wallet') }}">
+                        <flux:button variant="{{ $account?->account_number ? 'outline' : 'primary' }}" color="teal">
+                            {{ $account?->account_number ? 'Open wallet' : 'Create account card' }}
+                        </flux:button>
+                    </a>
+                    @if ($account?->account_number)
+                        <span class="service-chip border-white/10 bg-white/10 text-white/85">Top up by transfer</span>
+                    @endif
+                </div>
+            </div>
+        @endforeach
     </section>
 
     <section class="grid gap-4 lg:grid-cols-[0.9fr,1.1fr]">

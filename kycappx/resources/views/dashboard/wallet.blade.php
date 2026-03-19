@@ -1,20 +1,27 @@
+@php
+    $accountsByProvider = $virtualAccounts->keyBy('provider');
+    $paystackAccount = $accountsByProvider->get('paystack');
+    $koraAccount = $accountsByProvider->get('kora');
+@endphp
+
 <x-layouts.dashboard-user title="Wallet" header="Wallet Operations">
+    @if ($errors->has('virtual_accounts'))
+        <div class="rounded-[1.5rem] border border-rose-200 bg-rose-50/90 px-5 py-4 text-sm font-medium text-rose-900 dark:border-rose-900/40 dark:bg-rose-950/30 dark:text-rose-200">
+            {{ $errors->first('virtual_accounts') }}
+        </div>
+    @endif
+
     <section class="grid gap-4 xl:grid-cols-[0.9fr,1.1fr]">
-        <div class="surface-card relative overflow-hidden bg-slate-950 p-8 text-white">
-            <div class="absolute -right-10 top-0 h-48 w-48 rounded-full bg-amber-300/20 blur-3xl"></div>
-            <div class="absolute bottom-0 left-0 h-52 w-52 rounded-full bg-teal-400/20 blur-3xl"></div>
+        <div class="account-card">
+            <div class="text-sm text-white/60">Available Balance</div>
+            <div class="mt-4 text-5xl font-semibold">NGN {{ number_format((float) $wallet->balance, 2) }}</div>
+            <div class="mt-3 text-sm text-white/75">
+                Wallet status: {{ ucfirst($wallet->status) }} · Currency: {{ strtoupper($wallet->currency) }}
+            </div>
 
-            <div class="relative">
-                <p class="section-kicker !text-teal-200">Available Balance</p>
-                <div class="mt-4 text-5xl font-semibold">NGN {{ number_format((float) $wallet->balance, 2) }}</div>
-                <div class="mt-3 text-sm text-slate-200/75">
-                    Wallet status: {{ ucfirst($wallet->status) }} · Currency: {{ strtoupper($wallet->currency) }}
-                </div>
-
-                <div class="mt-8 flex flex-wrap gap-2 text-xs">
-                    <span class="badge-soft border-white/10 bg-white/10 text-white">Kora {{ $gatewayStatus['kora'] ? 'configured' : 'not configured' }}</span>
-                    <span class="badge-soft border-white/10 bg-white/10 text-white">Paystack coming next</span>
-                </div>
+            <div class="mt-8 flex flex-wrap gap-2 text-xs">
+                <span class="badge-soft border-white/10 bg-white/10 text-white">Kora {{ $gatewayStatus['kora'] ? 'configured' : 'not configured' }}</span>
+                <span class="badge-soft border-white/10 bg-white/10 text-white">Paystack {{ $gatewayStatus['paystack'] ? 'configured' : 'not configured' }}</span>
             </div>
         </div>
 
@@ -69,6 +76,96 @@
                     {{ $siteSettings->wallet_funding_enabled ? 'Add `KORA_SECRET_KEY` and `KORA_REDIRECT_URL` to enable production wallet funding.' : 'Wallet funding has been disabled by the site administrator.' }}
                 </div>
             @endunless
+        </div>
+    </section>
+
+    <section class="grid gap-4 lg:grid-cols-2">
+        <div class="surface-card p-6 sm:p-8">
+            <div class="flex items-start justify-between gap-4">
+                <div>
+                    <p class="section-kicker">Paystack DVA</p>
+                    <h3 class="mt-3 text-2xl font-semibold text-slate-950 dark:text-slate-50">
+                        {{ $paystackAccount?->account_number ?: 'Create an account card' }}
+                    </h3>
+                    <p class="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                        Assign a Paystack dedicated account so customers can top up by direct bank transfer and receive wallet credits through webhooks.
+                    </p>
+                </div>
+                <x-ui.status-badge :value="$paystackAccount?->status ?? ($gatewayStatus['paystack'] ? 'Ready' : 'Setup Required')" :tone="match ($paystackAccount?->status ?? null) {
+                    'active' => 'success',
+                    'pending' => 'warning',
+                    'failed' => 'danger',
+                    default => $gatewayStatus['paystack'] ? 'info' : 'warning',
+                }" />
+            </div>
+
+            @if ($paystackAccount?->account_number)
+                <div class="mt-6 rounded-[1.5rem] border border-slate-200/80 bg-slate-50/80 p-5 dark:border-white/10 dark:bg-white/5">
+                    <div class="text-sm text-slate-500 dark:text-slate-400">{{ $paystackAccount->bank_name }}</div>
+                    <div class="mt-2 font-mono text-3xl font-semibold text-slate-950 dark:text-white">{{ $paystackAccount->account_number }}</div>
+                    <div class="mt-2 text-sm text-slate-600 dark:text-slate-300">{{ $paystackAccount->account_name }}</div>
+                </div>
+
+                <div class="mt-5 flex flex-wrap gap-3">
+                    <form method="POST" action="{{ route('wallet.accounts.requery', $paystackAccount) }}">
+                        @csrf
+                        <flux:button type="submit" variant="outline">Requery transfers</flux:button>
+                    </form>
+                </div>
+            @else
+                <form method="POST" action="{{ route('wallet.accounts.store', ['provider' => 'paystack']) }}" class="mt-6">
+                    @csrf
+                    <flux:button type="submit" variant="primary" color="teal" :disabled="! ($siteSettings->dva_enabled && $siteSettings->paystack_dva_enabled && $gatewayStatus['paystack'])">
+                        Assign Paystack account
+                    </flux:button>
+                </form>
+            @endif
+        </div>
+
+        <div class="surface-card p-6 sm:p-8">
+            <div class="flex items-start justify-between gap-4">
+                <div>
+                    <p class="section-kicker">Kora Virtual Account</p>
+                    <h3 class="mt-3 text-2xl font-semibold text-slate-950 dark:text-slate-50">
+                        {{ $koraAccount?->account_number ?: 'Create a Kora virtual account' }}
+                    </h3>
+                    <p class="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                        Kora permanent virtual accounts require BVN-backed KYC. Once assigned, incoming transfers can credit the wallet automatically.
+                    </p>
+                </div>
+                <x-ui.status-badge :value="$koraAccount?->status ?? ($gatewayStatus['kora'] ? 'Ready' : 'Setup Required')" :tone="match ($koraAccount?->status ?? null) {
+                    'active' => 'success',
+                    'pending' => 'warning',
+                    'failed' => 'danger',
+                    default => $gatewayStatus['kora'] ? 'info' : 'warning',
+                }" />
+            </div>
+
+            @if ($koraAccount?->account_number)
+                <div class="mt-6 rounded-[1.5rem] border border-slate-200/80 bg-slate-50/80 p-5 dark:border-white/10 dark:bg-white/5">
+                    <div class="text-sm text-slate-500 dark:text-slate-400">{{ $koraAccount->bank_name }}</div>
+                    <div class="mt-2 font-mono text-3xl font-semibold text-slate-950 dark:text-white">{{ $koraAccount->account_number }}</div>
+                    <div class="mt-2 text-sm text-slate-600 dark:text-slate-300">{{ $koraAccount->account_name }}</div>
+                </div>
+            @else
+                <form method="POST" action="{{ route('wallet.accounts.store', ['provider' => 'kora']) }}" class="mt-6 space-y-4">
+                    @csrf
+
+                    <div>
+                        <x-input-label for="kora_bvn" value="BVN" />
+                        <x-text-input id="kora_bvn" name="bvn" type="text" class="mt-2" :value="old('bvn')" placeholder="22123456789" />
+                    </div>
+
+                    <div>
+                        <x-input-label for="kora_nin" value="NIN (Optional)" />
+                        <x-text-input id="kora_nin" name="nin" type="text" class="mt-2" :value="old('nin')" placeholder="12345678901" />
+                    </div>
+
+                    <flux:button type="submit" variant="primary" color="teal" :disabled="! ($siteSettings->dva_enabled && $siteSettings->kora_dva_enabled && $gatewayStatus['kora'])">
+                        Assign Kora account
+                    </flux:button>
+                </form>
+            @endif
         </div>
     </section>
 

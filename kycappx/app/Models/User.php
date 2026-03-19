@@ -23,10 +23,20 @@ use Spatie\Permission\Traits\HasRoles;
     'theme_preference',
     'status',
     'settings',
+    'service_discount_rate',
+    'preferred_funding_provider',
+    'two_factor_secret',
+    'two_factor_confirmed_at',
+    'two_factor_recovery_codes',
     'password',
     'last_login_at',
 ])]
-#[Hidden(['password', 'remember_token'])]
+#[Hidden([
+    'password',
+    'remember_token',
+    'two_factor_secret',
+    'two_factor_recovery_codes',
+])]
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
@@ -44,7 +54,11 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'settings' => 'array',
+            'service_discount_rate' => 'decimal:2',
             'last_login_at' => 'datetime',
+            'two_factor_secret' => 'encrypted',
+            'two_factor_confirmed_at' => 'datetime',
+            'two_factor_recovery_codes' => 'encrypted:array',
         ];
     }
 
@@ -68,6 +82,16 @@ class User extends Authenticatable
         return $this->hasMany(ApiKey::class);
     }
 
+    public function socialAccounts(): HasMany
+    {
+        return $this->hasMany(SocialAccount::class);
+    }
+
+    public function dedicatedVirtualAccounts(): HasMany
+    {
+        return $this->hasMany(DedicatedVirtualAccount::class);
+    }
+
     public function auditLogs(): HasMany
     {
         return $this->hasMany(AuditLog::class);
@@ -78,12 +102,34 @@ class User extends Authenticatable
         return $this->hasAnyRole(['super-admin', 'admin', 'support']);
     }
 
+    public function isUserPro(): bool
+    {
+        return $this->hasRole('user-pro');
+    }
+
+    public function hasTwoFactorEnabled(): bool
+    {
+        return filled($this->two_factor_secret) && $this->two_factor_confirmed_at !== null;
+    }
+
+    public function currentDiscountRate(float $default = 0): float
+    {
+        $userRate = (float) ($this->service_discount_rate ?? 0);
+
+        if ($userRate > 0) {
+            return $userRate;
+        }
+
+        return $this->isUserPro() ? $default : 0.0;
+    }
+
     public function settingsPayload(): array
     {
         return array_merge([
             'security_alerts' => true,
             'monthly_reports' => true,
             'marketing_emails' => false,
+            'login_with_google' => true,
         ], $this->settings ?? []);
     }
 }

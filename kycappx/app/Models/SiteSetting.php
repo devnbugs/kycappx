@@ -17,6 +17,14 @@ class SiteSetting extends Model
         'wallet_funding_enabled',
         'verification_enabled',
         'dark_mode_enabled',
+        'google_auth_enabled',
+        'dva_enabled',
+        'paystack_dva_enabled',
+        'kora_dva_enabled',
+        'user_pro_discount_rate',
+        'default_funding_provider',
+        'logo_text',
+        'header_notice',
         'maintenance_message',
         'footer_text',
     ];
@@ -28,6 +36,11 @@ class SiteSetting extends Model
             'wallet_funding_enabled' => 'boolean',
             'verification_enabled' => 'boolean',
             'dark_mode_enabled' => 'boolean',
+            'google_auth_enabled' => 'boolean',
+            'dva_enabled' => 'boolean',
+            'paystack_dva_enabled' => 'boolean',
+            'kora_dva_enabled' => 'boolean',
+            'user_pro_discount_rate' => 'decimal:2',
         ];
     }
 }

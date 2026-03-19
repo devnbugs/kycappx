@@ -1,5 +1,5 @@
 <x-layouts.dashboard-admin title="Admin Overview" header="Operations Overview">
-    <section class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+    <section class="grid gap-4 md:grid-cols-2 xl:grid-cols-6">
         <div class="metric-card">
             <div class="text-sm text-slate-500 dark:text-slate-400">Users</div>
             <div class="mt-3 text-3xl font-semibold text-slate-950 dark:text-slate-50">{{ number_format($metrics['users']) }}</div>
@@ -29,6 +29,22 @@
             <div class="mt-3 text-3xl font-semibold text-slate-950 dark:text-slate-50">{{ number_format($metrics['active_services']) }}/{{ number_format(max($metrics['active_providers'], 1)) }}</div>
             <div class="mt-2 text-sm text-slate-600 dark:text-slate-300">
                 {{ number_format($metrics['failed_webhooks']) }} webhook deliveries are still pending review.
+            </div>
+        </div>
+
+        <div class="metric-card">
+            <div class="text-sm text-slate-500 dark:text-slate-400">User Pro</div>
+            <div class="mt-3 text-3xl font-semibold text-slate-950 dark:text-slate-50">{{ number_format($metrics['user_pro_accounts']) }}</div>
+            <div class="mt-2 text-sm text-slate-600 dark:text-slate-300">
+                Discount-enabled customers with stronger security expectations.
+            </div>
+        </div>
+
+        <div class="metric-card">
+            <div class="text-sm text-slate-500 dark:text-slate-400">Dedicated Accounts</div>
+            <div class="mt-3 text-3xl font-semibold text-slate-950 dark:text-slate-50">{{ number_format($metrics['dedicated_accounts']) }}</div>
+            <div class="mt-2 text-sm text-slate-600 dark:text-slate-300">
+                Paystack and Kora account cards currently assigned.
             </div>
         </div>
     </section>
@@ -100,6 +116,14 @@
                     <div class="text-xs uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Dark Mode</div>
                     <div class="mt-2"><x-ui.status-badge :value="$siteSettingsSnapshot->dark_mode_enabled ? 'Available' : 'Locked Light'" :tone="$siteSettingsSnapshot->dark_mode_enabled ? 'success' : 'info'" /></div>
                 </div>
+                <div class="rounded-[1.5rem] bg-slate-50 px-4 py-4 dark:bg-slate-900/70">
+                    <div class="text-xs uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Google Auth</div>
+                    <div class="mt-2"><x-ui.status-badge :value="$siteSettingsSnapshot->google_auth_enabled ? 'Enabled' : 'Disabled'" :tone="$siteSettingsSnapshot->google_auth_enabled ? 'success' : 'warning'" /></div>
+                </div>
+                <div class="rounded-[1.5rem] bg-slate-50 px-4 py-4 dark:bg-slate-900/70">
+                    <div class="text-xs uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">DVA</div>
+                    <div class="mt-2"><x-ui.status-badge :value="$siteSettingsSnapshot->dva_enabled ? 'Live' : 'Disabled'" :tone="$siteSettingsSnapshot->dva_enabled ? 'success' : 'warning'" /></div>
+                </div>
             </div>
 
             <div class="mt-6 rounded-[1.5rem] border border-dashed border-slate-300 px-4 py-4 text-sm text-slate-600 dark:border-slate-700 dark:text-slate-300">
@@ -138,6 +162,10 @@
                                 <td class="px-6 py-4">
                                     <div class="font-semibold text-slate-950 dark:text-slate-50">{{ $customer->name }}</div>
                                     <div class="text-xs text-slate-500 dark:text-slate-400">{{ '@'.$customer->username }} · {{ $customer->email }}</div>
+                                    <div class="mt-2 flex flex-wrap gap-2 text-xs">
+                                        <span class="badge-soft">{{ $customer->socialAccounts->count() }} social</span>
+                                        <span class="badge-soft">{{ $customer->dedicatedVirtualAccounts->count() }} DVA</span>
+                                    </div>
                                 </td>
                                 <td class="px-6 py-4 text-slate-600 dark:text-slate-300">{{ $customer->getRoleNames()->implode(', ') ?: 'Unassigned' }}</td>
                                 <td class="px-6 py-4 font-semibold text-slate-950 dark:text-slate-50">NGN {{ number_format((float) ($customer->wallet?->balance ?? 0), 2) }}</td>

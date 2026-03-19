@@ -3,24 +3,31 @@
 namespace App\Http\Controllers;
 
 use App\Models\ApiKey;
+use App\Models\DedicatedVirtualAccount;
 use App\Models\FundingRequest;
 use App\Models\VerificationRequest;
 use App\Models\VerificationService;
 use App\Models\WalletTransaction;
+use App\Services\Billing\VirtualAccountService;
 use App\Services\Billing\WalletService;
+use App\Services\SiteSettings;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
 
 class DashboardController extends Controller
 {
-    public function __construct(private WalletService $walletService)
-    {
+    public function __construct(
+        private WalletService $walletService,
+        private VirtualAccountService $virtualAccounts,
+        private SiteSettings $siteSettings,
+    ) {
     }
 
     public function index(Request $request): View
     {
         $user = $request->user();
         $wallet = $this->walletService->ensureWallet($user->id);
+        $siteSettings = $this->siteSettings->current();
 
         return view('dashboard.home', [
             'wallet' => $wallet,
@@ -51,8 +58,15 @@ class DashboardController extends Controller
             'activeServices' => VerificationService::query()
                 ->active()
                 ->orderBy('name')
-                ->limit(4)
+                ->limit(6)
                 ->get(),
+            'virtualAccounts' => DedicatedVirtualAccount::query()
+                ->where('user_id', $user->id)
+                ->orderByDesc('is_primary')
+                ->orderBy('provider')
+                ->get(),
+            'virtualAccountProviders' => $this->virtualAccounts->providers(),
+            'discountRate' => $user->currentDiscountRate((float) $siteSettings->user_pro_discount_rate),
         ]);
     }
 
@@ -74,8 +88,14 @@ class DashboardController extends Controller
                 ->get(),
             'gatewayStatus' => [
                 'kora' => filled(config('services.kora.secret_key')) && filled(config('services.kora.redirect_url')),
-                'paystack' => false,
+                'paystack' => filled(config('services.paystack.secret_key')),
             ],
+            'virtualAccounts' => DedicatedVirtualAccount::query()
+                ->where('user_id', $user->id)
+                ->orderByDesc('is_primary')
+                ->orderBy('provider')
+                ->get(),
+            'virtualAccountProviders' => $this->virtualAccounts->providers(),
         ]);
     }
 

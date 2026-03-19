@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
 use App\Models\ProviderConfig;
+use App\Models\DedicatedVirtualAccount;
 use App\Models\Wallet;
 use App\Models\User;
 use App\Models\VerificationRequest;
@@ -25,6 +26,7 @@ class AdminController extends Controller
     {
         $metrics = Cache::remember('admin.dashboard.metrics', now()->addMinute(), function () {
             $customerRoleExists = Role::query()->where('name', 'customer')->exists();
+            $userProRoleExists = Role::query()->where('name', 'user-pro')->exists();
             $adminCount = User::query()
                 ->whereHas('roles', fn ($query) => $query->whereIn('name', ['super-admin', 'admin', 'support']))
                 ->count();
@@ -41,6 +43,8 @@ class AdminController extends Controller
                 'active_services' => VerificationService::query()->where('is_active', true)->count(),
                 'active_providers' => ProviderConfig::query()->where('is_active', true)->count(),
                 'wallet_balance' => (float) Wallet::query()->sum('balance'),
+                'dedicated_accounts' => DedicatedVirtualAccount::query()->count(),
+                'user_pro_accounts' => $userProRoleExists ? User::role('user-pro')->count() : 0,
             ];
         });
 
@@ -48,7 +52,7 @@ class AdminController extends Controller
             'metrics' => $metrics,
             'siteSettingsSnapshot' => $this->siteSettings->current(),
             'recentCustomers' => User::query()
-                ->with(['wallet', 'roles'])
+                ->with(['wallet', 'roles', 'dedicatedVirtualAccounts', 'socialAccounts'])
                 ->latest()
                 ->limit(6)
                 ->get(),

@@ -12,7 +12,7 @@
     <title>{{ isset($title) ? $title.' | '.($siteSettings->site_name ?? config('app.name')) : ($siteSettings->site_name ?? config('app.name')) }}</title>
 
     <link rel="preconnect" href="https://fonts.bunny.net">
-    <link href="https://fonts.bunny.net/css?family=space-grotesk:400,500,600,700|jetbrains-mono:400,500&display=swap" rel="stylesheet" />
+    <link href="https://fonts.bunny.net/css?family=sora:400,500,600,700|jetbrains-mono:400,500,600&display=swap" rel="stylesheet" />
     <script>
         window.__theme = {
             initial: @js($themePreference),
@@ -39,20 +39,23 @@
     </script>
 
     @vite(['resources/css/app.css','resources/js/app.js'])
+    @fluxAppearance
     @livewireStyles
 </head>
 <body class="min-h-screen antialiased transition-colors duration-300">
-    <div class="pointer-events-none fixed inset-0 -z-10">
-        <div class="absolute inset-x-0 top-0 h-56 bg-slate-950 dark:bg-slate-900"></div>
-        <div class="absolute left-0 top-16 h-72 w-72 rounded-full bg-teal-400/20 blur-3xl dark:bg-teal-400/10"></div>
-        <div class="absolute right-0 top-24 h-80 w-80 rounded-full bg-amber-300/25 blur-3xl dark:bg-amber-300/10"></div>
+    <div class="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
+        <div class="absolute inset-0 grid-pattern opacity-30"></div>
+        <div class="absolute inset-x-0 top-0 h-72 bg-slate-950/6 dark:bg-white/3"></div>
+        <div class="absolute -left-14 top-24 h-72 w-72 rounded-full bg-teal-500/18 blur-3xl dark:bg-teal-400/10"></div>
+        <div class="absolute right-0 top-16 h-80 w-80 rounded-full bg-amber-300/22 blur-3xl dark:bg-amber-300/10"></div>
+        <div class="absolute bottom-0 left-1/3 h-80 w-80 rounded-full bg-sky-300/12 blur-3xl dark:bg-sky-500/8"></div>
     </div>
 
-    <div class="min-h-screen">
-        <x-ui.theme-toggle class="fixed right-4 top-4 z-50 sm:right-6 sm:top-6" />
+    <div class="shell min-h-screen">
         {{ $slot }}
     </div>
 
+    @fluxScripts
     @livewireScripts
 </body>
 </html>

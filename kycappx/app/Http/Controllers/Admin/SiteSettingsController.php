@@ -25,6 +25,11 @@ class SiteSettingsController extends Controller
 
     public function update(Request $request): RedirectResponse
     {
+        $currentSettings = $this->siteSettings->current();
+        $booleanSetting = static fn (string $key) => $request->has($key)
+            ? $request->boolean($key)
+            : (bool) data_get($currentSettings, $key, false);
+
         $validated = $request->validate([
             'site_name' => ['required', 'string', 'max:255'],
             'site_tagline' => ['nullable', 'string', 'max:255'],
@@ -36,6 +41,14 @@ class SiteSettingsController extends Controller
             'wallet_funding_enabled' => ['nullable', 'boolean'],
             'verification_enabled' => ['nullable', 'boolean'],
             'dark_mode_enabled' => ['nullable', 'boolean'],
+            'google_auth_enabled' => ['nullable', 'boolean'],
+            'dva_enabled' => ['nullable', 'boolean'],
+            'paystack_dva_enabled' => ['nullable', 'boolean'],
+            'kora_dva_enabled' => ['nullable', 'boolean'],
+            'user_pro_discount_rate' => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'default_funding_provider' => ['nullable', Rule::in(['paystack', 'kora'])],
+            'logo_text' => ['nullable', 'string', 'max:12'],
+            'header_notice' => ['nullable', 'string', 'max:255'],
             'maintenance_message' => ['nullable', 'string', 'max:1000'],
             'footer_text' => ['nullable', 'string', 'max:255'],
         ]);
@@ -47,10 +60,18 @@ class SiteSettingsController extends Controller
             'support_phone' => $validated['support_phone'] ?? null,
             'default_currency' => strtoupper($validated['default_currency']),
             'default_theme' => $validated['default_theme'],
-            'registration_enabled' => $request->boolean('registration_enabled'),
-            'wallet_funding_enabled' => $request->boolean('wallet_funding_enabled'),
-            'verification_enabled' => $request->boolean('verification_enabled'),
-            'dark_mode_enabled' => $request->boolean('dark_mode_enabled'),
+            'registration_enabled' => $booleanSetting('registration_enabled'),
+            'wallet_funding_enabled' => $booleanSetting('wallet_funding_enabled'),
+            'verification_enabled' => $booleanSetting('verification_enabled'),
+            'dark_mode_enabled' => $booleanSetting('dark_mode_enabled'),
+            'google_auth_enabled' => $booleanSetting('google_auth_enabled'),
+            'dva_enabled' => $booleanSetting('dva_enabled'),
+            'paystack_dva_enabled' => $booleanSetting('paystack_dva_enabled'),
+            'kora_dva_enabled' => $booleanSetting('kora_dva_enabled'),
+            'user_pro_discount_rate' => $validated['user_pro_discount_rate'] ?? $currentSettings->user_pro_discount_rate,
+            'default_funding_provider' => $validated['default_funding_provider'] ?? $currentSettings->default_funding_provider,
+            'logo_text' => strtoupper($validated['logo_text'] ?? $currentSettings->logo_text),
+            'header_notice' => $validated['header_notice'] ?? null,
             'maintenance_message' => $validated['maintenance_message'] ?? null,
             'footer_text' => $validated['footer_text'] ?? null,
         ]);
@@ -65,6 +86,9 @@ class SiteSettingsController extends Controller
                 'wallet_funding_enabled' => $settings->wallet_funding_enabled,
                 'verification_enabled' => $settings->verification_enabled,
                 'dark_mode_enabled' => $settings->dark_mode_enabled,
+                'google_auth_enabled' => $settings->google_auth_enabled,
+                'dva_enabled' => $settings->dva_enabled,
+                'default_funding_provider' => $settings->default_funding_provider,
             ],
         ]);
 

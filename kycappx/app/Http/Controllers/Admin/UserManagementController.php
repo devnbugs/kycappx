@@ -32,7 +32,7 @@ class UserManagementController extends Controller
         ];
 
         $users = User::query()
-            ->with(['wallet', 'roles'])
+            ->with(['wallet', 'roles', 'dedicatedVirtualAccounts', 'socialAccounts'])
             ->withCount(['verificationRequests', 'apiKeys'])
             ->when($filters['search'] !== '', function ($query) use ($filters) {
                 $query->where(function ($inner) use ($filters) {
@@ -66,7 +66,7 @@ class UserManagementController extends Controller
         $wallet = $this->walletService->ensureWallet($user->id);
 
         return view('admin.customers.edit', [
-            'customer' => $user->load(['roles', 'wallet']),
+            'customer' => $user->load(['roles', 'wallet', 'socialAccounts', 'dedicatedVirtualAccounts']),
             'wallet' => $wallet,
             'roles' => Role::query()->orderBy('name')->get(),
             'recentApiKeys' => $user->apiKeys()->latest()->limit(8)->get(),
@@ -92,6 +92,8 @@ class UserManagementController extends Controller
             'timezone' => ['required', 'timezone'],
             'status' => ['required', Rule::in(['active', 'suspended', 'pending'])],
             'theme_preference' => ['required', Rule::in(['light', 'dark', 'system'])],
+            'preferred_funding_provider' => ['nullable', Rule::in(['paystack', 'kora'])],
+            'service_discount_rate' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'roles' => ['nullable', 'array'],
             'roles.*' => ['string', Rule::exists('roles', 'name')],
             'wallet_status' => ['required', Rule::in(['active', 'frozen', 'closed'])],
@@ -103,6 +105,7 @@ class UserManagementController extends Controller
             'settings.monthly_reports' => ['nullable', 'boolean'],
             'settings.marketing_emails' => ['nullable', 'boolean'],
             'deactivate_api_keys' => ['nullable', 'boolean'],
+            'reset_two_factor' => ['nullable', 'boolean'],
         ]);
 
         $selectedRoles = collect($validated['roles'] ?? [])->values();
@@ -130,6 +133,8 @@ class UserManagementController extends Controller
                     'timezone' => $validated['timezone'],
                     'status' => $validated['status'],
                     'theme_preference' => $validated['theme_preference'],
+                    'preferred_funding_provider' => $validated['preferred_funding_provider'] ?? null,
+                    'service_discount_rate' => (float) ($validated['service_discount_rate'] ?? 0),
                     'settings' => $settings,
                 ]);
 
@@ -167,6 +172,14 @@ class UserManagementController extends Controller
                     $user->apiKeys()->where('is_active', true)->update(['is_active' => false]);
                 }
 
+                if ($request->boolean('reset_two_factor')) {
+                    $user->forceFill([
+                        'two_factor_secret' => null,
+                        'two_factor_recovery_codes' => null,
+                        'two_factor_confirmed_at' => null,
+                    ])->save();
+                }
+
                 AuditLog::create([
                     'user_id' => $request->user()->id,
                     'action' => 'admin.user.updated',
@@ -177,6 +190,7 @@ class UserManagementController extends Controller
                         'status' => $validated['status'],
                         'wallet_status' => $validated['wallet_status'],
                         'deactivated_api_keys' => $request->boolean('deactivate_api_keys'),
+                        'reset_two_factor' => $request->boolean('reset_two_factor'),
                     ],
                 ]);
             });

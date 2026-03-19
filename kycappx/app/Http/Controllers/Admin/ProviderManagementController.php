@@ -32,6 +32,12 @@ class ProviderManagementController extends Controller
                 'configured' => filled(config('services.kora.secret_key')) && filled(config('services.kora.redirect_url')),
                 'base_url' => config('services.kora.base_url'),
             ],
+            [
+                'name' => 'Paystack',
+                'code' => 'paystack',
+                'configured' => filled(config('services.paystack.secret_key')),
+                'base_url' => config('services.paystack.base_url'),
+            ],
         ]);
 
         return view('admin.providers.index', [

@@ -59,7 +59,9 @@ class RegisteredUserController extends Controller
                 'security_alerts' => true,
                 'monthly_reports' => true,
                 'marketing_emails' => false,
+                'login_with_google' => true,
             ],
+            'preferred_funding_provider' => $settings->default_funding_provider,
             'password' => Hash::make($request->password),
         ]);
 

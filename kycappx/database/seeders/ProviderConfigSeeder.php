@@ -18,5 +18,15 @@ class ProviderConfigSeeder extends Seeder
             ['provider' => 'youverify'],
             ['is_active' => false, 'priority' => 2, 'config' => ['channel' => 'identity']]
         );
+
+        ProviderConfig::updateOrCreate(
+            ['provider' => 'paystack'],
+            ['is_active' => false, 'priority' => 1, 'config' => ['channel' => 'payments', 'product' => 'dva']]
+        );
+
+        ProviderConfig::updateOrCreate(
+            ['provider' => 'kora'],
+            ['is_active' => false, 'priority' => 2, 'config' => ['channel' => 'payments', 'product' => 'dva']]
+        );
     }
 }

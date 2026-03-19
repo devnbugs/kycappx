@@ -38,18 +38,22 @@ class VerificationController extends Controller
     {
         abort_unless($this->siteSettings->current()->verification_enabled, 403, 'Verification requests are currently disabled.');
 
+        $user = $request->user();
         $services = VerificationService::query()
             ->active()
             ->orderBy('name')
             ->get();
 
         $selectedService = $services->firstWhere('id', (int) $request->query('service'));
+        $discountRate = $user->currentDiscountRate((float) $this->siteSettings->current()->user_pro_discount_rate);
 
         return view('dashboard.verifications.create', [
-            'wallet' => $this->walletService->ensureWallet($request->user()->id),
+            'wallet' => $this->walletService->ensureWallet($user->id),
             'services' => $services,
             'selectedService' => $selectedService,
             'fieldBlueprints' => $selectedService ? $this->fieldBlueprintsFor($selectedService) : [],
+            'discountRate' => $discountRate,
+            'selectedPrice' => $selectedService ? $this->priceFor($user, $selectedService) : 0,
         ]);
     }
 
@@ -69,7 +73,7 @@ class VerificationController extends Controller
         );
 
         $wallet = $this->walletService->ensureWallet($request->user()->id);
-        $price = (float) $service->default_price;
+        $price = $this->priceFor($request->user(), $service);
 
         if ($price > 0 && (float) $wallet->balance < $price) {
             throw ValidationException::withMessages([
@@ -126,6 +130,20 @@ class VerificationController extends Controller
                 'identifier' => ['required', 'string', 'max:40'],
                 'company_name' => ['nullable', 'string', 'max:160'],
             ],
+            'TIN' => [
+                'service_id' => ['required', 'integer', 'exists:verification_services,id'],
+                'identifier' => ['required', 'string', 'max:20'],
+                'name' => ['nullable', 'string', 'max:160'],
+            ],
+            'PHONE' => [
+                'service_id' => ['required', 'integer', 'exists:verification_services,id'],
+                'identifier' => ['required', 'string', 'max:20'],
+            ],
+            'ACCOUNT' => [
+                'service_id' => ['required', 'integer', 'exists:verification_services,id'],
+                'account_number' => ['required', 'digits_between:10,10'],
+                'bank_code' => ['required', 'string', 'max:10'],
+            ],
             default => [
                 'service_id' => ['required', 'integer', 'exists:verification_services,id'],
                 'identifier' => ['required', 'string', 'max:120'],
@@ -139,6 +157,8 @@ class VerificationController extends Controller
             'BVN' => ['identifier' => 'BVN'],
             'NIN' => ['identifier' => 'NIN'],
             'CAC' => ['identifier' => 'registration number'],
+            'TIN' => ['identifier' => 'TIN'],
+            'PHONE' => ['identifier' => 'phone number'],
             default => ['identifier' => 'identifier'],
         };
     }
@@ -163,6 +183,17 @@ class VerificationController extends Controller
             'CAC' => [
                 'registration_number' => $validated['identifier'],
                 'company_name' => $validated['company_name'] ?? null,
+            ],
+            'TIN' => [
+                'identifier' => $validated['identifier'],
+                'name' => $validated['name'] ?? null,
+            ],
+            'PHONE' => [
+                'identifier' => $validated['identifier'],
+            ],
+            'ACCOUNT' => [
+                'account_number' => $validated['account_number'],
+                'bank_code' => $validated['bank_code'],
             ],
             default => [
                 'identifier' => $validated['identifier'],
@@ -191,9 +222,27 @@ class VerificationController extends Controller
                 ['name' => 'identifier', 'label' => 'Registration Number', 'type' => 'text', 'placeholder' => 'RC1234567', 'helper' => 'Company registration number'],
                 ['name' => 'company_name', 'label' => 'Company Name', 'type' => 'text', 'placeholder' => 'Kycappx Labs Limited', 'helper' => 'Optional but useful for reviews'],
             ],
+            'TIN' => [
+                ['name' => 'identifier', 'label' => 'TIN', 'type' => 'text', 'placeholder' => '12345678-0001', 'helper' => 'Tax Identification Number'],
+                ['name' => 'name', 'label' => 'Business or Individual Name', 'type' => 'text', 'placeholder' => 'Kycappx Labs Limited', 'helper' => 'Optional but recommended'],
+            ],
+            'PHONE' => [
+                ['name' => 'identifier', 'label' => 'Phone Number', 'type' => 'text', 'placeholder' => '08030000000', 'helper' => 'Use a valid Nigerian phone number'],
+            ],
+            'ACCOUNT' => [
+                ['name' => 'account_number', 'label' => 'Account Number', 'type' => 'text', 'placeholder' => '0123456789', 'helper' => '10-digit account number'],
+                ['name' => 'bank_code', 'label' => 'Bank Code', 'type' => 'text', 'placeholder' => '058', 'helper' => 'NIP or provider bank code'],
+            ],
             default => [
                 ['name' => 'identifier', 'label' => 'Identifier', 'type' => 'text', 'placeholder' => 'Enter the request value', 'helper' => 'Provide the primary lookup value for this service'],
             ],
         };
+    }
+
+    private function priceFor($user, VerificationService $service): float
+    {
+        $discountRate = $user->currentDiscountRate((float) $this->siteSettings->current()->user_pro_discount_rate);
+
+        return round(max(0, (float) $service->default_price * (1 - ($discountRate / 100))), 2);
     }
 }
