@@ -1,0 +1,24 @@
+{
+  "name": "KYCAPPX Laravel",
+  "image": "mcr.microsoft.com/devcontainers/php:1-8.2-bullseye",
+  "features": {
+    "ghcr.io/devcontainers/features/github-cli:1": {},
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "20"
+    },
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {}
+  },
+  "forwardPorts": [8000, 3306, 6379, 5173],
+  "postCreateCommand": "composer install && npm install",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "bmewburn.vscode-intelephense-client",
+        "onecentlin.laravel-blade",
+        "eamodio.gitlens",
+        "mikestead.dotenv",
+        "ms-azuretools.vscode-docker"
+      ]
+    }
+  }
+}
