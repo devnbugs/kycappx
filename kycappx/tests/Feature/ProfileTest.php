@@ -29,7 +29,17 @@ class ProfileTest extends TestCase
             ->actingAs($user)
             ->patch('/profile', [
                 'name' => 'Test User',
+                'username' => 'testuser',
                 'email' => 'test@example.com',
+                'phone' => '+2348000000000',
+                'company_name' => 'Kycappx',
+                'timezone' => 'UTC',
+                'theme_preference' => 'dark',
+                'settings' => [
+                    'security_alerts' => true,
+                    'monthly_reports' => false,
+                    'marketing_emails' => false,
+                ],
             ]);
 
         $response
@@ -39,7 +49,10 @@ class ProfileTest extends TestCase
         $user->refresh();
 
         $this->assertSame('Test User', $user->name);
+        $this->assertSame('testuser', $user->username);
         $this->assertSame('test@example.com', $user->email);
+        $this->assertSame('dark', $user->theme_preference);
+        $this->assertSame('Kycappx', $user->company_name);
         $this->assertNull($user->email_verified_at);
     }
 
@@ -51,7 +64,13 @@ class ProfileTest extends TestCase
             ->actingAs($user)
             ->patch('/profile', [
                 'name' => 'Test User',
+                'username' => $user->username,
                 'email' => $user->email,
+                'phone' => $user->phone,
+                'company_name' => $user->company_name,
+                'timezone' => $user->timezone,
+                'theme_preference' => $user->theme_preference,
+                'settings' => $user->settingsPayload(),
             ]);
 
         $response

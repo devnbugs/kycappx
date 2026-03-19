@@ -1,13 +1,13 @@
 <x-layouts.dashboard-user title="New Verification" header="Create Verification">
     <section class="grid gap-4 xl:grid-cols-[0.95fr,1.05fr]">
         <div class="surface-card p-6 sm:p-8">
-            <div class="flex items-center justify-between gap-3">
-                <div>
-                    <p class="section-kicker">Service Picker</p>
-                    <h2 class="mt-3 text-2xl font-semibold text-slate-950">Choose the verification you want to run</h2>
+                <div class="flex items-center justify-between gap-3">
+                    <div>
+                        <p class="section-kicker">Service Picker</p>
+                        <h2 class="mt-3 text-2xl font-semibold text-slate-950 dark:text-slate-50">Choose the verification you want to run</h2>
+                    </div>
+                    <div class="badge-soft">Wallet: NGN {{ number_format((float) $wallet->balance, 2) }}</div>
                 </div>
-                <div class="badge-soft">Wallet: NGN {{ number_format((float) $wallet->balance, 2) }}</div>
-            </div>
 
             <div class="mt-6 space-y-3">
                 @forelse ($services as $service)
@@ -16,13 +16,13 @@
                         @class([
                             'block rounded-[1.5rem] border p-5 transition',
                             'border-slate-950 bg-slate-950 text-white shadow-lg' => optional($selectedService)->id === $service->id,
-                            'border-slate-200 bg-white/80 text-slate-900 hover:border-slate-300 hover:bg-white' => optional($selectedService)->id !== $service->id,
+                            'border-slate-200 bg-white/80 text-slate-900 hover:border-slate-300 hover:bg-white dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-100 dark:hover:border-slate-600 dark:hover:bg-slate-900' => optional($selectedService)->id !== $service->id,
                         ])
                     >
                         <div class="flex items-start justify-between gap-3">
                             <div>
                                 <div class="text-lg font-semibold">{{ $service->name }}</div>
-                                <div class="mt-1 text-sm {{ optional($selectedService)->id === $service->id ? 'text-slate-200/80' : 'text-slate-500' }}">
+                                <div class="mt-1 text-sm {{ optional($selectedService)->id === $service->id ? 'text-slate-200/80' : 'text-slate-500 dark:text-slate-400' }}">
                                     {{ $service->code }} · {{ strtoupper($service->country) }}
                                 </div>
                             </div>
@@ -39,7 +39,7 @@
                         </div>
                     </a>
                 @empty
-                    <div class="rounded-[1.5rem] border border-dashed border-slate-300 bg-slate-50 px-5 py-8 text-sm text-slate-500">
+                    <div class="rounded-[1.5rem] border border-dashed border-slate-300 bg-slate-50 px-5 py-8 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900/50 dark:text-slate-300">
                         There are no active verification services yet. Seed the service catalog or enable a provider from the admin workspace.
                     </div>
                 @endforelse
@@ -51,9 +51,9 @@
                 <div class="flex items-center justify-between gap-3">
                     <div>
                         <p class="section-kicker">Request Details</p>
-                        <h2 class="mt-3 text-2xl font-semibold text-slate-950">{{ $selectedService->name }}</h2>
-                        <p class="mt-3 text-sm leading-6 text-slate-600">
-                            Fill in the required details below. Automated requests bill <span class="font-semibold text-slate-950">NGN {{ number_format((float) $selectedService->default_price, 2) }}</span> on success.
+                        <h2 class="mt-3 text-2xl font-semibold text-slate-950 dark:text-slate-50">{{ $selectedService->name }}</h2>
+                        <p class="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                            Fill in the required details below. Automated requests bill <span class="font-semibold text-slate-950 dark:text-slate-50">NGN {{ number_format((float) $selectedService->default_price, 2) }}</span> on success.
                         </p>
                     </div>
                     <x-ui.status-badge :value="$selectedService->code" tone="info" />
@@ -86,7 +86,7 @@
                                 />
                             @endif
 
-                            <p class="mt-2 text-xs text-slate-500">{{ $field['helper'] }}</p>
+                            <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">{{ $field['helper'] }}</p>
                             <x-input-error :messages="$errors->get($field['name'])" class="mt-2" />
                         </div>
                     @endforeach
@@ -103,8 +103,8 @@
             @else
                 <div class="flex h-full flex-col items-start justify-center rounded-[1.75rem] border border-dashed border-slate-300 bg-slate-50 px-6 py-10">
                     <p class="section-kicker">Next Step</p>
-                    <h2 class="mt-3 text-2xl font-semibold text-slate-950">Pick a service to reveal the correct form.</h2>
-                    <p class="mt-3 max-w-lg text-sm leading-6 text-slate-600">
+                    <h2 class="mt-3 text-2xl font-semibold text-slate-950 dark:text-slate-50">Pick a service to reveal the correct form.</h2>
+                    <p class="mt-3 max-w-lg text-sm leading-6 text-slate-600 dark:text-slate-300">
                         Each service has its own payload requirements. Choose one from the left and we will show the right input fields and pricing.
                     </p>
                 </div>

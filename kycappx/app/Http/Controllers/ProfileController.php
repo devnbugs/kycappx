@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ProfileUpdateRequest;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -26,7 +27,16 @@ class ProfileController extends Controller
      */
     public function update(ProfileUpdateRequest $request): RedirectResponse
     {
-        $request->user()->fill($request->validated());
+        $validated = $request->validated();
+        $validated['username'] = strtolower($validated['username']);
+        $validated['email'] = strtolower($validated['email']);
+        $validated['settings'] = [
+            'security_alerts' => (bool) data_get($validated, 'settings.security_alerts', false),
+            'monthly_reports' => (bool) data_get($validated, 'settings.monthly_reports', false),
+            'marketing_emails' => (bool) data_get($validated, 'settings.marketing_emails', false),
+        ];
+
+        $request->user()->fill($validated);
 
         if ($request->user()->isDirty('email')) {
             $request->user()->email_verified_at = null;
@@ -35,6 +45,26 @@ class ProfileController extends Controller
         $request->user()->save();
 
         return Redirect::route('profile.edit')->with('status', 'profile-updated');
+    }
+
+    public function updateTheme(Request $request): JsonResponse|RedirectResponse
+    {
+        $validated = $request->validate([
+            'theme_preference' => ['required', 'in:light,dark,system'],
+        ]);
+
+        $request->user()->forceFill([
+            'theme_preference' => $validated['theme_preference'],
+        ])->save();
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'ok' => true,
+                'theme_preference' => $validated['theme_preference'],
+            ]);
+        }
+
+        return Redirect::back()->with('status', 'theme-updated');
     }
 
     /**

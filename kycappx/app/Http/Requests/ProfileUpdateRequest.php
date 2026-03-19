@@ -18,6 +18,14 @@ class ProfileUpdateRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:255'],
+            'username' => [
+                'required',
+                'string',
+                'min:3',
+                'max:40',
+                'regex:/^[A-Za-z0-9._-]+$/',
+                Rule::unique(User::class)->ignore($this->user()->id),
+            ],
             'email' => [
                 'required',
                 'string',
@@ -26,6 +34,14 @@ class ProfileUpdateRequest extends FormRequest
                 'max:255',
                 Rule::unique(User::class)->ignore($this->user()->id),
             ],
+            'phone' => ['nullable', 'string', 'max:30'],
+            'company_name' => ['nullable', 'string', 'max:255'],
+            'timezone' => ['required', 'timezone'],
+            'theme_preference' => ['required', Rule::in(['light', 'dark', 'system'])],
+            'settings' => ['nullable', 'array'],
+            'settings.security_alerts' => ['nullable', 'boolean'],
+            'settings.monthly_reports' => ['nullable', 'boolean'],
+            'settings.marketing_emails' => ['nullable', 'boolean'],
         ];
     }
 }

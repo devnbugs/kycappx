@@ -19,39 +19,28 @@ class DatabaseSeeder extends Seeder
     {
         $this->call([
             RoleSeeder::class,
+            SiteSettingsSeeder::class,
             ProviderConfigSeeder::class,
             VerificationServiceSeeder::class,
+            AdminUserSeeder::class,
         ]);
 
         $customer = User::factory()->create([
             'name' => 'Test User',
+            'username' => 'testuser',
             'email' => 'test@example.com',
-        ]);
-
-        $admin = User::factory()->create([
-            'name' => 'Operations Admin',
-            'email' => 'admin@kycappx.test',
         ]);
 
         Role::findOrCreate('customer');
         Role::findOrCreate('super-admin');
 
         $customer->assignRole('customer');
-        $admin->assignRole('super-admin');
 
         Wallet::firstOrCreate([
             'user_id' => $customer->id,
         ], [
             'currency' => 'NGN',
             'balance' => 25000,
-            'status' => 'active',
-        ]);
-
-        Wallet::firstOrCreate([
-            'user_id' => $admin->id,
-        ], [
-            'currency' => 'NGN',
-            'balance' => 100000,
             'status' => 'active',
         ]);
     }

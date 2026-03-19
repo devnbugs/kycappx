@@ -13,7 +13,19 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Spatie\Permission\Traits\HasRoles;
 
-#[Fillable(['name', 'email', 'password'])]
+#[Fillable([
+    'name',
+    'username',
+    'email',
+    'phone',
+    'company_name',
+    'timezone',
+    'theme_preference',
+    'status',
+    'settings',
+    'password',
+    'last_login_at',
+])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
@@ -31,6 +43,8 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'settings' => 'array',
+            'last_login_at' => 'datetime',
         ];
     }
 
@@ -54,8 +68,22 @@ class User extends Authenticatable
         return $this->hasMany(ApiKey::class);
     }
 
+    public function auditLogs(): HasMany
+    {
+        return $this->hasMany(AuditLog::class);
+    }
+
     public function isAdmin(): bool
     {
         return $this->hasAnyRole(['super-admin', 'admin', 'support']);
+    }
+
+    public function settingsPayload(): array
+    {
+        return array_merge([
+            'security_alerts' => true,
+            'monthly_reports' => true,
+            'marketing_emails' => false,
+        ], $this->settings ?? []);
     }
 }

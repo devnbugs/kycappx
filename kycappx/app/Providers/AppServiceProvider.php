@@ -2,7 +2,9 @@
 
 namespace App\Providers;
 
+use App\Services\SiteSettings;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Facades\View;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -17,8 +19,12 @@ class AppServiceProvider extends ServiceProvider
     /**
      * Bootstrap any application services.
      */
-    public function boot(): void
+    public function boot(SiteSettings $siteSettings): void
     {
-        //
+        $settings = $siteSettings->current();
+
+        config(['app.name' => $settings->site_name ?: config('app.name')]);
+
+        View::share('siteSettings', $settings);
     }
 }

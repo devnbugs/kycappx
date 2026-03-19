@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Dashboard;
 
 use App\Http\Controllers\Controller;
 use App\Models\FundingRequest;
+use App\Services\SiteSettings;
 use App\Services\Billing\Gateways\KoraGateway;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -13,8 +14,16 @@ use Illuminate\Support\Str;
 
 class KoraFundingController extends Controller
 {
+    public function __construct(private SiteSettings $siteSettings)
+    {
+    }
+
     public function initialize(Request $request, KoraGateway $kora): RedirectResponse|JsonResponse
     {
+        if (! $this->siteSettings->current()->wallet_funding_enabled) {
+            return $this->failureResponse($request, 'Wallet funding is currently disabled by the site administrator.');
+        }
+
         $data = $request->validate([
             'amount' => ['required', 'numeric', 'min:100'],
             'currency' => ['nullable', 'string', 'size:3'],
@@ -22,7 +31,7 @@ class KoraFundingController extends Controller
 
         $user = Auth::user();
         $amount = (float) $data['amount'];
-        $currency = strtoupper($data['currency'] ?? 'NGN');
+        $currency = strtoupper($data['currency'] ?? $this->siteSettings->current()->default_currency);
 
         if (! filled(config('services.kora.secret_key')) || ! filled(config('services.kora.redirect_url'))) {
             return $this->failureResponse($request, 'Kora funding is not configured in the environment.');

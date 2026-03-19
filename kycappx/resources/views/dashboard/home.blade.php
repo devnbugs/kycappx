@@ -24,27 +24,27 @@
 
         <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-1">
             <div class="metric-card">
-                <div class="text-sm text-slate-500">Wallet balance</div>
-                <div class="mt-3 text-3xl font-semibold text-slate-950">NGN {{ number_format($stats['wallet_balance'], 2) }}</div>
-                <div class="mt-2 text-sm text-slate-600">Current wallet status: {{ ucfirst($wallet->status) }}</div>
+                <div class="text-sm text-slate-500 dark:text-slate-400">Wallet balance</div>
+                <div class="mt-3 text-3xl font-semibold text-slate-950 dark:text-slate-50">NGN {{ number_format($stats['wallet_balance'], 2) }}</div>
+                <div class="mt-2 text-sm text-slate-600 dark:text-slate-300">Current wallet status: {{ ucfirst($wallet->status) }}</div>
             </div>
 
             <div class="metric-card">
-                <div class="text-sm text-slate-500">Transactions</div>
-                <div class="mt-3 text-3xl font-semibold text-slate-950">{{ number_format($stats['transaction_count']) }}</div>
-                <div class="mt-2 text-sm text-slate-600">Ledger entries connected to your wallet.</div>
+                <div class="text-sm text-slate-500 dark:text-slate-400">Transactions</div>
+                <div class="mt-3 text-3xl font-semibold text-slate-950 dark:text-slate-50">{{ number_format($stats['transaction_count']) }}</div>
+                <div class="mt-2 text-sm text-slate-600 dark:text-slate-300">Ledger entries connected to your wallet.</div>
             </div>
 
             <div class="metric-card">
-                <div class="text-sm text-slate-500">Verifications</div>
-                <div class="mt-3 text-3xl font-semibold text-slate-950">{{ number_format($stats['verification_count']) }}</div>
-                <div class="mt-2 text-sm text-slate-600">Submitted verification requests across all services.</div>
+                <div class="text-sm text-slate-500 dark:text-slate-400">Verifications</div>
+                <div class="mt-3 text-3xl font-semibold text-slate-950 dark:text-slate-50">{{ number_format($stats['verification_count']) }}</div>
+                <div class="mt-2 text-sm text-slate-600 dark:text-slate-300">Submitted verification requests across all services.</div>
             </div>
 
             <div class="metric-card">
-                <div class="text-sm text-slate-500">Active API keys</div>
-                <div class="mt-3 text-3xl font-semibold text-slate-950">{{ number_format($stats['active_api_keys']) }}</div>
-                <div class="mt-2 text-sm text-slate-600">Keys that can still access your account.</div>
+                <div class="text-sm text-slate-500 dark:text-slate-400">Active API keys</div>
+                <div class="mt-3 text-3xl font-semibold text-slate-950 dark:text-slate-50">{{ number_format($stats['active_api_keys']) }}</div>
+                <div class="mt-2 text-sm text-slate-600 dark:text-slate-300">Keys that can still access your account.</div>
             </div>
         </div>
     </section>
@@ -54,7 +54,7 @@
             <div class="flex items-center justify-between gap-3">
                 <div>
                     <p class="section-kicker">Service Catalog</p>
-                    <h3 class="mt-3 text-2xl font-semibold text-slate-950">Active verification services</h3>
+                    <h3 class="mt-3 text-2xl font-semibold text-slate-950 dark:text-slate-50">Active verification services</h3>
                 </div>
                 <a href="{{ route('verifications.create') }}">
                     <x-ui.button variant="secondary">New Request</x-ui.button>
@@ -63,11 +63,11 @@
 
             <div class="mt-6 space-y-3">
                 @forelse ($activeServices as $service)
-                    <div class="rounded-[1.5rem] border border-slate-200/80 bg-white/80 p-4">
+                    <div class="rounded-[1.5rem] border border-slate-200/80 bg-white/80 p-4 dark:border-slate-700 dark:bg-slate-900/70">
                         <div class="flex items-start justify-between gap-4">
                             <div>
-                                <div class="text-lg font-semibold text-slate-950">{{ $service->name }}</div>
-                                <div class="mt-1 text-sm text-slate-500">{{ $service->code }} · {{ strtoupper($service->country) }}</div>
+                                <div class="text-lg font-semibold text-slate-950 dark:text-slate-50">{{ $service->name }}</div>
+                                <div class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{ $service->code }} · {{ strtoupper($service->country) }}</div>
                             </div>
                             <x-ui.status-badge :value="$service->is_active ? 'Active' : 'Inactive'" :tone="$service->is_active ? 'success' : 'warning'" />
                         </div>
@@ -78,7 +78,7 @@
                         </div>
                     </div>
                 @empty
-                    <div class="rounded-[1.5rem] border border-dashed border-slate-300 bg-slate-50 px-5 py-8 text-sm text-slate-500">
+                    <div class="rounded-[1.5rem] border border-dashed border-slate-300 bg-slate-50 px-5 py-8 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900/50 dark:text-slate-300">
                         No verification services have been activated yet.
                     </div>
                 @endforelse
@@ -87,10 +87,10 @@
 
         <div class="table-shell">
             <div class="flex items-center justify-between gap-3 px-6 py-5">
-                <div>
-                    <p class="section-kicker">Recent Verification Activity</p>
-                    <h3 class="mt-3 text-2xl font-semibold text-slate-950">Latest requests</h3>
-                </div>
+                    <div>
+                        <p class="section-kicker">Recent Verification Activity</p>
+                        <h3 class="mt-3 text-2xl font-semibold text-slate-950 dark:text-slate-50">Latest requests</h3>
+                    </div>
                 <a href="{{ route('verifications.index') }}">
                     <x-ui.button variant="secondary">View All</x-ui.button>
                 </a>
@@ -110,10 +110,10 @@
                         @forelse ($recentVerifications as $verification)
                             <tr class="table-row">
                                 <td class="px-6 py-4">
-                                    <div class="font-semibold text-slate-950">{{ $verification->service?->name ?? 'Unknown service' }}</div>
-                                    <div class="text-xs text-slate-500">{{ $verification->provider_used ?: 'Awaiting provider' }}</div>
+                                    <div class="font-semibold text-slate-950 dark:text-slate-50">{{ $verification->service?->name ?? 'Unknown service' }}</div>
+                                    <div class="text-xs text-slate-500 dark:text-slate-400">{{ $verification->provider_used ?: 'Awaiting provider' }}</div>
                                 </td>
-                                <td class="px-6 py-4 font-mono text-xs text-slate-700">{{ $verification->reference }}</td>
+                                <td class="px-6 py-4 font-mono text-xs text-slate-700 dark:text-slate-300">{{ $verification->reference }}</td>
                                 <td class="px-6 py-4">
                                     <x-ui.status-badge
                                         :value="$verification->status"
@@ -125,11 +125,11 @@
                                         }"
                                     />
                                 </td>
-                                <td class="px-6 py-4 text-slate-600">{{ $verification->created_at?->format('M d, Y H:i') }}</td>
+                                <td class="px-6 py-4 text-slate-600 dark:text-slate-300">{{ $verification->created_at?->format('M d, Y H:i') }}</td>
                             </tr>
                         @empty
                             <tr class="table-row">
-                                <td colspan="4" class="px-6 py-8 text-center text-slate-500">No verification requests have been submitted yet.</td>
+                                <td colspan="4" class="px-6 py-8 text-center text-slate-500 dark:text-slate-400">No verification requests have been submitted yet.</td>
                             </tr>
                         @endforelse
                     </tbody>
@@ -142,7 +142,7 @@
         <div class="flex items-center justify-between gap-3 px-6 py-5">
             <div>
                 <p class="section-kicker">Recent Wallet Activity</p>
-                <h3 class="mt-3 text-2xl font-semibold text-slate-950">Latest transactions</h3>
+                <h3 class="mt-3 text-2xl font-semibold text-slate-950 dark:text-slate-50">Latest transactions</h3>
             </div>
             <a href="{{ route('transactions') }}">
                 <x-ui.button variant="secondary">Open Ledger</x-ui.button>
@@ -163,7 +163,7 @@
                 <tbody>
                     @forelse ($recentTransactions as $transaction)
                         <tr class="table-row">
-                            <td class="px-6 py-4 font-mono text-xs text-slate-700">{{ $transaction->reference }}</td>
+                            <td class="px-6 py-4 font-mono text-xs text-slate-700 dark:text-slate-300">{{ $transaction->reference }}</td>
                             <td class="px-6 py-4">
                                 <x-ui.status-badge
                                     :value="$transaction->type"
@@ -174,13 +174,13 @@
                                     }"
                                 />
                             </td>
-                            <td class="px-6 py-4 font-semibold text-slate-950">NGN {{ number_format((float) $transaction->amount, 2) }}</td>
-                            <td class="px-6 py-4 text-slate-600">{{ $transaction->source ?: 'Internal' }}</td>
-                            <td class="px-6 py-4 text-slate-600">{{ $transaction->created_at?->diffForHumans() }}</td>
+                            <td class="px-6 py-4 font-semibold text-slate-950 dark:text-slate-50">NGN {{ number_format((float) $transaction->amount, 2) }}</td>
+                            <td class="px-6 py-4 text-slate-600 dark:text-slate-300">{{ $transaction->source ?: 'Internal' }}</td>
+                            <td class="px-6 py-4 text-slate-600 dark:text-slate-300">{{ $transaction->created_at?->diffForHumans() }}</td>
                         </tr>
                     @empty
                         <tr class="table-row">
-                            <td colspan="5" class="px-6 py-8 text-center text-slate-500">No wallet activity recorded yet.</td>
+                            <td colspan="5" class="px-6 py-8 text-center text-slate-500 dark:text-slate-400">No wallet activity recorded yet.</td>
                         </tr>
                     @endforelse
                 </tbody>

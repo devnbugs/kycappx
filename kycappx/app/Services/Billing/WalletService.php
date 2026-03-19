@@ -4,13 +4,20 @@ namespace App\Services\Billing;
 
 use App\Models\Wallet;
 use App\Models\WalletTransaction;
+use App\Services\SiteSettings;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
 class WalletService
 {
-    public function ensureWallet(int $userId, string $currency = 'NGN'): Wallet
+    public function __construct(private SiteSettings $siteSettings)
     {
+    }
+
+    public function ensureWallet(int $userId, ?string $currency = null): Wallet
+    {
+        $currency ??= $this->siteSettings->current()->default_currency;
+
         return Wallet::firstOrCreate(
             ['user_id' => $userId],
             ['currency' => strtoupper($currency), 'balance' => 0, 'status' => 'active']

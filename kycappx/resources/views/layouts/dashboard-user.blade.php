@@ -16,13 +16,13 @@
 <x-layouts.app :title="$title ?? 'Customer Workspace'">
     <div class="min-h-screen px-4 py-4 sm:px-6 lg:px-8">
         <div class="mx-auto grid max-w-7xl gap-4 lg:grid-cols-[280px,minmax(0,1fr)]">
-            <aside class="surface-card hidden overflow-hidden bg-slate-950 text-slate-100 lg:block">
+            <aside class="surface-card hidden overflow-hidden bg-slate-950 text-slate-100 dark:border-slate-800 dark:bg-slate-950 lg:block">
                 <div class="flex h-full flex-col p-5">
                     <div>
                         <div class="flex items-center gap-3">
                             <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10 text-lg font-bold shadow-lg">KX</div>
                             <div>
-                                <div class="text-lg font-semibold">{{ config('app.name') }}</div>
+                                <div class="text-lg font-semibold">{{ $siteSettings->site_name ?? config('app.name') }}</div>
                                 <div class="text-sm text-slate-300">Customer workspace</div>
                             </div>
                         </div>
@@ -71,8 +71,8 @@
                     <div class="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
                         <div>
                             <p class="section-kicker">Customer Workspace</p>
-                            <h1 class="mt-3 text-3xl font-semibold text-slate-950 text-balance">{{ $header ?? 'Operations overview' }}</h1>
-                            <p class="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
+                            <h1 class="mt-3 text-3xl font-semibold text-slate-950 text-balance dark:text-slate-50">{{ $header ?? 'Operations overview' }}</h1>
+                            <p class="mt-2 max-w-2xl text-sm leading-6 text-slate-600 dark:text-slate-300">
                                 Keep wallet operations, verification runs, and credential management moving from one clear surface.
                             </p>
                         </div>
@@ -97,7 +97,7 @@
                                 @class([
                                     'whitespace-nowrap rounded-full px-4 py-2 text-sm font-semibold transition',
                                     'bg-slate-950 text-white' => request()->routeIs($item['pattern']),
-                                    'bg-slate-100 text-slate-700 hover:bg-slate-200' => ! request()->routeIs($item['pattern']),
+                                    'bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700' => ! request()->routeIs($item['pattern']),
                                 ])
                             >
                                 {{ $item['label'] }}
@@ -107,7 +107,7 @@
                 </header>
 
                 @if (session('status'))
-                    <div class="surface-card border-emerald-200/80 bg-emerald-50/90 px-5 py-4 text-sm font-medium text-emerald-900">
+                    <div class="surface-card border-emerald-200/80 bg-emerald-50/90 px-5 py-4 text-sm font-medium text-emerald-900 dark:border-emerald-900/60 dark:bg-emerald-950/50 dark:text-emerald-200">
                         {{ session('status') }}
                     </div>
                 @endif

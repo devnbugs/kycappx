@@ -1,6 +1,10 @@
 <?php
 
 use App\Http\Controllers\Admin\AdminController;
+use App\Http\Controllers\Admin\ProviderManagementController;
+use App\Http\Controllers\Admin\SiteSettingsController;
+use App\Http\Controllers\Admin\UserManagementController;
+use App\Http\Controllers\Admin\VerificationServiceController;
 use App\Http\Controllers\Dashboard\ApiKeyController;
 use App\Http\Controllers\Dashboard\KoraFundingController;
 use App\Http\Controllers\Dashboard\VerificationController;
@@ -39,16 +43,39 @@ Route::middleware('auth')->group(function () {
     Route::controller(ProfileController::class)->group(function () {
         Route::get('/profile', 'edit')->name('profile.edit');
         Route::patch('/profile', 'update')->name('profile.update');
+        Route::post('/profile/theme', 'updateTheme')->name('profile.theme');
         Route::delete('/profile', 'destroy')->name('profile.destroy');
     });
 
-    Route::prefix('admin')->name('admin.')->middleware('admin')->controller(AdminController::class)->group(function () {
-        Route::get('/', 'dashboard')->name('dashboard');
-        Route::get('/customers', 'customers')->name('customers.index');
-        Route::get('/services', 'services')->name('services.index');
-        Route::get('/providers', 'providers')->name('providers.index');
-        Route::get('/logs/webhooks', 'webhookLogs')->name('logs.webhooks');
-        Route::get('/logs/verifications', 'verificationLogs')->name('logs.verifications');
+    Route::prefix('admin')->name('admin.')->middleware('admin')->group(function () {
+        Route::controller(AdminController::class)->group(function () {
+            Route::get('/', 'dashboard')->name('dashboard');
+            Route::get('/logs/webhooks', 'webhookLogs')->name('logs.webhooks');
+            Route::get('/logs/verifications', 'verificationLogs')->name('logs.verifications');
+            Route::get('/logs/audit', 'auditLogs')->name('logs.audit');
+        });
+
+        Route::controller(UserManagementController::class)->group(function () {
+            Route::get('/users', 'index')->name('users.index');
+            Route::get('/customers', 'index')->name('customers.index');
+            Route::get('/users/{user}/edit', 'edit')->name('users.edit');
+            Route::put('/users/{user}', 'update')->name('users.update');
+        });
+
+        Route::controller(VerificationServiceController::class)->group(function () {
+            Route::get('/services', 'index')->name('services.index');
+            Route::put('/services/{verificationService}', 'update')->name('services.update');
+        });
+
+        Route::controller(ProviderManagementController::class)->group(function () {
+            Route::get('/providers', 'index')->name('providers.index');
+            Route::put('/providers/{providerConfig}', 'update')->name('providers.update');
+        });
+
+        Route::controller(SiteSettingsController::class)->group(function () {
+            Route::get('/settings/site', 'edit')->name('settings.site');
+            Route::put('/settings/site', 'update')->name('settings.site.update');
+        });
     });
 });
 

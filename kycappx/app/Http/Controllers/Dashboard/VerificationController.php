@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Dashboard;
 use App\Http\Controllers\Controller;
 use App\Models\VerificationService;
 use App\Services\Billing\WalletService;
+use App\Services\SiteSettings;
 use App\Services\Verification\VerificationOrchestrator;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -16,6 +17,7 @@ class VerificationController extends Controller
 {
     public function __construct(
         private WalletService $walletService,
+        private SiteSettings $siteSettings,
         private VerificationOrchestrator $verificationOrchestrator
     ) {
     }
@@ -34,6 +36,8 @@ class VerificationController extends Controller
 
     public function create(Request $request): View
     {
+        abort_unless($this->siteSettings->current()->verification_enabled, 403, 'Verification requests are currently disabled.');
+
         $services = VerificationService::query()
             ->active()
             ->orderBy('name')
@@ -51,6 +55,8 @@ class VerificationController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
+        abort_unless($this->siteSettings->current()->verification_enabled, 403, 'Verification requests are currently disabled.');
+
         $service = VerificationService::query()
             ->active()
             ->whereKey($request->integer('service_id'))

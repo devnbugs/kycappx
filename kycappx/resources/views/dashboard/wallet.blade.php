@@ -22,12 +22,12 @@
             <div class="flex items-center justify-between gap-3">
                 <div>
                     <p class="section-kicker">Fund Wallet</p>
-                    <h2 class="mt-3 text-2xl font-semibold text-slate-950">Initialize a new Kora top-up</h2>
+                    <h2 class="mt-3 text-2xl font-semibold text-slate-950 dark:text-slate-50">Initialize a new Kora top-up</h2>
                 </div>
-                <x-ui.status-badge :value="$gatewayStatus['kora'] ? 'Live' : 'Setup Required'" :tone="$gatewayStatus['kora'] ? 'success' : 'warning'" />
+                <x-ui.status-badge :value="$siteSettings->wallet_funding_enabled ? ($gatewayStatus['kora'] ? 'Live' : 'Setup Required') : 'Disabled'" :tone="$siteSettings->wallet_funding_enabled ? ($gatewayStatus['kora'] ? 'success' : 'warning') : 'warning'" />
             </div>
 
-            <p class="mt-3 text-sm leading-6 text-slate-600">
+            <p class="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
                 Wallet credits are only recorded after a signed webhook confirms the payment, so the balance stays idempotent even if Kora retries the callback.
             </p>
 
@@ -48,7 +48,7 @@
                 </div>
 
                 <div class="flex flex-wrap gap-3">
-                    @if ($gatewayStatus['kora'])
+                    @if ($gatewayStatus['kora'] && $siteSettings->wallet_funding_enabled)
                         <x-ui.button type="submit">
                             Continue to Kora Checkout
                         </x-ui.button>
@@ -64,9 +64,9 @@
                 </div>
             </form>
 
-            @unless ($gatewayStatus['kora'])
-                <div class="mt-5 rounded-[1.5rem] border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-900">
-                    Add `KORA_SECRET_KEY` and `KORA_REDIRECT_URL` to enable production wallet funding.
+            @unless ($gatewayStatus['kora'] && $siteSettings->wallet_funding_enabled)
+                <div class="mt-5 rounded-[1.5rem] border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-900 dark:border-amber-900/60 dark:bg-amber-950/50 dark:text-amber-200">
+                    {{ $siteSettings->wallet_funding_enabled ? 'Add `KORA_SECRET_KEY` and `KORA_REDIRECT_URL` to enable production wallet funding.' : 'Wallet funding has been disabled by the site administrator.' }}
                 </div>
             @endunless
         </div>
@@ -74,10 +74,10 @@
 
     <section class="grid gap-4 lg:grid-cols-2">
         <div class="table-shell">
-            <div class="px-6 py-5">
-                <p class="section-kicker">Funding Requests</p>
-                <h3 class="mt-3 text-2xl font-semibold text-slate-950">Latest top-up attempts</h3>
-            </div>
+                <div class="px-6 py-5">
+                    <p class="section-kicker">Funding Requests</p>
+                    <h3 class="mt-3 text-2xl font-semibold text-slate-950 dark:text-slate-50">Latest top-up attempts</h3>
+                </div>
 
             <div class="overflow-x-auto">
                 <table class="min-w-full text-sm">
@@ -92,8 +92,8 @@
                     <tbody>
                         @forelse ($recentFundingRequests as $funding)
                             <tr class="table-row">
-                                <td class="px-6 py-4 font-mono text-xs text-slate-700">{{ $funding->reference }}</td>
-                                <td class="px-6 py-4 font-semibold text-slate-950">NGN {{ number_format((float) $funding->amount, 2) }}</td>
+                                <td class="px-6 py-4 font-mono text-xs text-slate-700 dark:text-slate-300">{{ $funding->reference }}</td>
+                                <td class="px-6 py-4 font-semibold text-slate-950 dark:text-slate-50">NGN {{ number_format((float) $funding->amount, 2) }}</td>
                                 <td class="px-6 py-4">
                                     <x-ui.status-badge
                                         :value="$funding->status"
@@ -104,11 +104,11 @@
                                         }"
                                     />
                                 </td>
-                                <td class="px-6 py-4 text-slate-600">{{ $funding->created_at?->format('M d, Y H:i') }}</td>
+                                <td class="px-6 py-4 text-slate-600 dark:text-slate-300">{{ $funding->created_at?->format('M d, Y H:i') }}</td>
                             </tr>
                         @empty
                             <tr class="table-row">
-                                <td colspan="4" class="px-6 py-8 text-center text-slate-500">No funding requests have been started yet.</td>
+                                <td colspan="4" class="px-6 py-8 text-center text-slate-500 dark:text-slate-400">No funding requests have been started yet.</td>
                             </tr>
                         @endforelse
                     </tbody>
@@ -117,10 +117,10 @@
         </div>
 
         <div class="table-shell">
-            <div class="px-6 py-5">
-                <p class="section-kicker">Ledger</p>
-                <h3 class="mt-3 text-2xl font-semibold text-slate-950">Recent wallet movements</h3>
-            </div>
+                <div class="px-6 py-5">
+                    <p class="section-kicker">Ledger</p>
+                    <h3 class="mt-3 text-2xl font-semibold text-slate-950 dark:text-slate-50">Recent wallet movements</h3>
+                </div>
 
             <div class="overflow-x-auto">
                 <table class="min-w-full text-sm">
@@ -145,13 +145,13 @@
                                         }"
                                     />
                                 </td>
-                                <td class="px-6 py-4 font-semibold text-slate-950">NGN {{ number_format((float) $transaction->amount, 2) }}</td>
-                                <td class="px-6 py-4 font-mono text-xs text-slate-700">{{ $transaction->reference }}</td>
-                                <td class="px-6 py-4 text-slate-600">{{ $transaction->created_at?->diffForHumans() }}</td>
+                                <td class="px-6 py-4 font-semibold text-slate-950 dark:text-slate-50">NGN {{ number_format((float) $transaction->amount, 2) }}</td>
+                                <td class="px-6 py-4 font-mono text-xs text-slate-700 dark:text-slate-300">{{ $transaction->reference }}</td>
+                                <td class="px-6 py-4 text-slate-600 dark:text-slate-300">{{ $transaction->created_at?->diffForHumans() }}</td>
                             </tr>
                         @empty
                             <tr class="table-row">
-                                <td colspan="4" class="px-6 py-8 text-center text-slate-500">No wallet transactions yet.</td>
+                                <td colspan="4" class="px-6 py-8 text-center text-slate-500 dark:text-slate-400">No wallet transactions yet.</td>
                             </tr>
                         @endforelse
                     </tbody>

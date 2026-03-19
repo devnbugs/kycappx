@@ -2,8 +2,8 @@
     <div class="space-y-8">
         <div>
             <p class="section-kicker">Get Started</p>
-            <h1 class="mt-3 text-3xl font-semibold text-slate-950">Create your Kycappx workspace.</h1>
-            <p class="mt-2 text-sm leading-6 text-slate-600">
+            <h1 class="mt-3 text-3xl font-semibold text-slate-950 dark:text-slate-50">Create your Kycappx workspace.</h1>
+            <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
                 Launch a customer account with a wallet, verification requests, and API access ready from day one.
             </p>
         </div>
@@ -15,6 +15,12 @@
                 <x-input-label for="name" :value="__('Name')" />
                 <x-text-input id="name" class="mt-2 block w-full" type="text" name="name" :value="old('name')" required autofocus autocomplete="name" />
                 <x-input-error :messages="$errors->get('name')" class="mt-2" />
+            </div>
+
+            <div>
+                <x-input-label for="username" :value="__('Username')" />
+                <x-text-input id="username" class="mt-2 block w-full" type="text" name="username" :value="old('username')" required autocomplete="username" />
+                <x-input-error :messages="$errors->get('username')" class="mt-2" />
             </div>
 
             <div>
@@ -36,7 +42,7 @@
             </div>
 
             <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <a class="text-sm font-medium text-slate-600 underline-offset-4 transition hover:text-slate-950 hover:underline" href="{{ route('login') }}">
+                <a class="text-sm font-medium text-slate-600 underline-offset-4 transition hover:text-slate-950 hover:underline dark:text-slate-300 dark:hover:text-slate-50" href="{{ route('login') }}">
                     {{ __('Already registered?') }}
                 </a>
 
