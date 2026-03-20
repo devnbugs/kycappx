@@ -101,7 +101,6 @@
                     @endforeach
 
                     <x-input-error :messages="$errors->get('service_id')" class="mt-2" />
-                    <x-security.turnstile action="verification_request" />
 
                     <div class="flex flex-wrap gap-3 pt-2">
                         <x-ui.button type="submit">Submit Verification</x-ui.button>

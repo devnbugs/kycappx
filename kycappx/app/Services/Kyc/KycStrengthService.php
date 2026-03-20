@@ -17,6 +17,7 @@ class KycStrengthService
             'middle_name' => $middleName,
             'last_name' => $lastName,
             'dob' => null,
+            'gender' => null,
             'phone' => $user->phone,
             'nin' => null,
             'bvn' => null,

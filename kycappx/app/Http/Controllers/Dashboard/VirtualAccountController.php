@@ -17,8 +17,8 @@ class VirtualAccountController extends Controller
         $provider = strtolower($provider);
 
         $validated = $request->validate([
-            'provider' => ['nullable', Rule::in(['paystack', 'kora'])],
-            'bvn' => [Rule::requiredIf($provider === 'kora'), 'nullable', 'digits:11'],
+            'provider' => ['nullable', Rule::in(['paystack', 'kora', 'squad'])],
+            'bvn' => [Rule::requiredIf(in_array($provider, ['kora', 'squad'], true)), 'nullable', 'digits:11'],
             'nin' => ['nullable', 'digits:11'],
         ]);
 

@@ -8,6 +8,7 @@ use App\Services\Security\TurnstileService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class AuthenticatedSessionController extends Controller
@@ -29,7 +30,7 @@ class AuthenticatedSessionController extends Controller
      */
     public function store(LoginRequest $request): RedirectResponse
     {
-        $this->turnstile->ensureValidRequest($request, 'login');
+        $this->ensureTurnstile($request, 'login');
         $request->authenticate();
 
         $request->session()->regenerate();
@@ -64,5 +65,20 @@ class AuthenticatedSessionController extends Controller
         $request->session()->regenerateToken();
 
         return redirect('/');
+    }
+
+    private function ensureTurnstile(Request $request, string $action): void
+    {
+        $result = $this->turnstile->verify(
+            token: $request->string('cf-turnstile-response')->value(),
+            remoteIp: $request->ip(),
+            expectedAction: $action,
+        );
+
+        if (! $result['success']) {
+            throw ValidationException::withMessages([
+                'cf-turnstile-response' => $result['message'],
+            ]);
+        }
     }
 }

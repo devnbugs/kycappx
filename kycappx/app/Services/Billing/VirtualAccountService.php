@@ -6,9 +6,12 @@ use App\Models\DedicatedVirtualAccount;
 use App\Models\User;
 use App\Services\Billing\Gateways\KoraGateway;
 use App\Services\Billing\Gateways\PaystackGateway;
+use App\Services\Billing\Gateways\SquadGateway;
+use App\Services\Kyc\KycStrengthService;
 use App\Services\Providers\ProviderFeatureService;
 use App\Services\SiteSettings;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use RuntimeException;
@@ -19,7 +22,9 @@ class VirtualAccountService
         private SiteSettings $siteSettings,
         private PaystackGateway $paystackGateway,
         private KoraGateway $koraGateway,
+        private SquadGateway $squadGateway,
         private ProviderFeatureService $providerFeatures,
+        private KycStrengthService $kycStrength,
     ) {
     }
 
@@ -45,6 +50,15 @@ class VirtualAccountService
                     && $settings->kora_dva_enabled
                     && $this->providerFeatures->isProductEnabled('kora', 'virtual_accounts', true),
                 'configured' => $this->koraGateway->isConfigured(),
+            ],
+            [
+                'code' => 'squad',
+                'name' => 'Squad Virtual Account',
+                'description' => 'GTBank-backed virtual accounts with webhook-driven wallet credits.',
+                'enabled' => $settings->dva_enabled
+                    && $settings->squad_dva_enabled
+                    && $this->providerFeatures->isProductEnabled('squad', 'virtual_accounts', true),
+                'configured' => $this->squadGateway->isConfigured(),
             ],
         ]);
     }
@@ -75,6 +89,7 @@ class VirtualAccountService
         return match ($provider) {
             'paystack' => $this->assignPaystackAccount($user, $record, $attributes),
             'kora' => $this->assignKoraAccount($user, $record, $attributes),
+            'squad' => $this->assignSquadAccount($user, $record, $attributes),
             default => throw new RuntimeException('Unsupported virtual account provider.'),
         };
     }
@@ -173,6 +188,14 @@ class VirtualAccountService
                     $query
                         ->where('account_number', data_get($payload, 'virtual_bank_account_details.virtual_bank_account.account_number'))
                         ->orWhere('provider_reference', data_get($payload, 'virtual_bank_account_details.virtual_bank_account.account_reference'));
+                })
+                ->first(),
+            'squad' => DedicatedVirtualAccount::query()
+                ->where('provider', 'squad')
+                ->where(function ($query) use ($payload) {
+                    $query
+                        ->where('account_number', data_get($payload, 'virtual_account_number'))
+                        ->orWhere('customer_reference', data_get($payload, 'customer_identifier'));
                 })
                 ->first(),
             default => null,
@@ -299,6 +322,95 @@ class VirtualAccountService
         return $record;
     }
 
+    public function squadRequirements(User $user, array $attributes = []): array
+    {
+        $profile = array_merge($this->kycStrength->profile($user), $attributes);
+        $missing = [];
+
+        foreach ([
+            'first_name' => 'first name',
+            'last_name' => 'last name',
+            'dob' => 'date of birth',
+            'phone' => 'phone number',
+            'gender' => 'gender',
+            'bvn' => 'BVN',
+            'address_line1' => 'address line 1',
+            'city' => 'city',
+            'state' => 'state',
+        ] as $key => $label) {
+            if (! filled($profile[$key] ?? null)) {
+                $missing[] = $label;
+            }
+        }
+
+        return [
+            'ready' => $missing === [],
+            'missing' => $missing,
+            'profile' => $profile,
+        ];
+    }
+
+    private function assignSquadAccount(User $user, DedicatedVirtualAccount $record, array $attributes): DedicatedVirtualAccount
+    {
+        $requirements = $this->squadRequirements($user, [
+            'bvn' => $attributes['bvn'] ?? data_get($user->kyc_profile, 'bvn'),
+        ]);
+
+        if (! $requirements['ready']) {
+            throw new RuntimeException('Update your KYC profile with '.collect($requirements['missing'])->implode(', ').' before creating a Squad virtual account.');
+        }
+
+        $profile = $requirements['profile'];
+        $payload = [
+            'customer_identifier' => 'SQUAD_'.$user->id.'_'.Str::upper(Str::random(8)),
+            'first_name' => $profile['first_name'],
+            'last_name' => $profile['last_name'],
+            'mobile_num' => $this->normalizeNigerianPhone($profile['phone']),
+            'email' => $user->email,
+            'bvn' => $profile['bvn'],
+            'dob' => Carbon::parse($profile['dob'])->format('m/d/Y'),
+            'address' => $this->buildAddressLine($profile),
+            'gender' => $this->normalizeGender($profile['gender']),
+            'beneficiary_account' => $attributes['beneficiary_account'] ?? config('services.squad.beneficiary_account'),
+        ];
+
+        if (filled($profile['middle_name'] ?? null)) {
+            $payload['middle_name'] = $profile['middle_name'];
+        }
+
+        $response = $this->squadGateway->createVirtualAccount($payload);
+
+        if (! $response['ok']) {
+            throw new RuntimeException($response['message']);
+        }
+
+        $data = data_get($response, 'body.data', []);
+
+        $record->fill([
+            'provider_reference' => data_get($data, 'customer_identifier'),
+            'customer_reference' => data_get($data, 'customer_identifier'),
+            'account_name' => trim(collect([
+                data_get($data, 'first_name'),
+                data_get($data, 'last_name'),
+            ])->filter()->implode(' ')) ?: $user->name,
+            'account_number' => data_get($data, 'virtual_account_number'),
+            'bank_name' => config('services.squad.bank_name', 'GTBank'),
+            'bank_code' => data_get($data, 'bank_code', '058'),
+            'currency' => 'NGN',
+            'status' => 'active',
+            'is_primary' => true,
+            'assigned_at' => now(),
+            'meta' => [
+                'payload' => $data,
+                'request_payload' => Arr::except($payload, ['bvn']),
+            ],
+        ]);
+
+        $record->save();
+
+        return $record;
+    }
+
     private function resolvePaystackUser(array $payload): ?User
     {
         $email = Str::lower((string) (data_get($payload, 'customer.email') ?? data_get($payload, 'email')));
@@ -328,5 +440,35 @@ class VirtualAccountService
         $lastName = count($parts) > 1 ? Arr::last($parts) : 'Account';
 
         return [$firstName, $lastName];
+    }
+
+    private function normalizeNigerianPhone(?string $phone): string
+    {
+        $digits = preg_replace('/\D+/', '', (string) $phone) ?: '';
+
+        if (str_starts_with($digits, '234') && strlen($digits) === 13) {
+            return '0'.substr($digits, 3);
+        }
+
+        return $digits;
+    }
+
+    private function normalizeGender(?string $gender): string
+    {
+        return match (Str::lower((string) $gender)) {
+            '2', 'female' => '2',
+            default => '1',
+        };
+    }
+
+    private function buildAddressLine(array $profile): string
+    {
+        return collect([
+            $profile['address_line1'] ?? null,
+            $profile['address_line2'] ?? null,
+            $profile['city'] ?? null,
+            $profile['state'] ?? null,
+            $profile['country'] ?? null,
+        ])->filter()->implode(', ');
     }
 }

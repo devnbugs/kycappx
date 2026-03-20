@@ -94,11 +94,13 @@ class DashboardController extends Controller
             'gatewayStatus' => [
                 'kora' => filled(config('services.kora.secret_key')) && filled(config('services.kora.redirect_url')),
                 'paystack' => filled(config('services.paystack.secret_key')),
+                'squad' => filled(config('services.squad.secret_key')),
             ],
             'providerProducts' => [
                 'kora_checkout' => $this->providerFeatures->isProductEnabled('kora', 'checkout', true),
                 'paystack_dedicated_accounts' => $this->providerFeatures->isProductEnabled('paystack', 'dedicated_accounts', true),
                 'kora_virtual_accounts' => $this->providerFeatures->isProductEnabled('kora', 'virtual_accounts', true),
+                'squad_virtual_accounts' => $this->providerFeatures->isProductEnabled('squad', 'virtual_accounts', true),
             ],
             'virtualAccounts' => DedicatedVirtualAccount::query()
                 ->where('user_id', $user->id)
@@ -106,6 +108,7 @@ class DashboardController extends Controller
                 ->orderBy('provider')
                 ->get(),
             'virtualAccountProviders' => $this->virtualAccounts->providers(),
+            'squadRequirements' => $this->virtualAccounts->squadRequirements($user),
         ]);
     }
 

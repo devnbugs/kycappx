@@ -10,6 +10,7 @@ use App\Models\VerificationRequest;
 use App\Models\VerificationService;
 use App\Providers\Verification\Prembly\PremblyProvider;
 use App\Services\Billing\WalletService;
+use App\Services\Messaging\SquadSmsService;
 use App\Services\Providers\ProviderFeatureService;
 use App\Services\SiteSettings;
 use Illuminate\Support\Str;
@@ -22,6 +23,7 @@ class VerificationOrchestrator
         private WalletService $walletService,
         private SiteSettings $siteSettings,
         private ProviderFeatureService $providerFeatures,
+        private SquadSmsService $smsService,
     ) {
     }
 
@@ -42,23 +44,11 @@ class VerificationOrchestrator
             'request_payload' => $maskedPayload,
         ]);
 
-        if (! $this->supportsAutomation($service)) {
-            $verificationRequest->update([
-                'status' => 'manual_review',
-                'normalized_response' => [
-                    'message' => 'This service is available in the workspace, but automation is still being completed.',
-                ],
-                'completed_at' => now(),
-            ]);
-
-            return $verificationRequest->fresh(['service']);
-        }
-
         $provider = $this->resolveProvider($service);
 
         if (! $provider) {
             $verificationRequest->update([
-                'status' => 'manual_review',
+                'status' => 'failed',
                 'normalized_response' => [
                     'message' => 'Automation is not configured for this verification yet.',
                 ],
@@ -118,13 +108,12 @@ class VerificationOrchestrator
             } catch (Throwable $exception) {
                 report($exception);
 
-                $status = 'manual_review';
-                $errorMessage = 'Provider completed, but billing needs manual review.';
+                $errorMessage = 'Provider completed, but wallet billing could not be captured automatically.';
             }
         }
 
         $attempt->update([
-            'status' => $status === 'success' ? 'success' : 'failed',
+            'status' => $result->ok ? 'success' : 'failed',
             'response_payload' => $result->raw,
             'error_message' => $errorMessage,
             'finished_at' => now(),
@@ -132,7 +121,11 @@ class VerificationOrchestrator
 
         $normalizedResponse = $result->normalized;
 
-        if ($status === 'manual_review') {
+        if ($result->ok) {
+            $normalizedResponse['provider_reference'] = $result->reference;
+        }
+
+        if ($result->ok && $errorMessage) {
             $normalizedResponse['billing_message'] = $errorMessage;
         }
 
@@ -143,6 +136,8 @@ class VerificationOrchestrator
             'raw_response' => $result->raw,
             'completed_at' => now(),
         ]);
+
+        $this->smsService->notifyVerificationResult($user, $verificationRequest->fresh(['service']));
 
         return $verificationRequest->fresh(['service']);
     }
@@ -157,13 +152,16 @@ class VerificationOrchestrator
             'NIN' => $provider->verifyNin($payload),
             'PHONE', 'US_PHONE' => $provider->verifyPhone($payload),
             'CAC' => $provider->verifyCac($payload),
+            'US_BIODATA' => $provider->verifyUsBiodata($payload),
+            'US_ADDRESS' => $provider->verifyUsAddress($payload),
+            'US_SSN' => $provider->verifyUsSsn($payload),
             default => throw new RuntimeException('This verification service is not supported yet.'),
         };
     }
 
     private function supportsAutomation(VerificationService $service): bool
     {
-        return in_array(strtoupper($service->code), ['BVN', 'NIN', 'PHONE', 'US_PHONE'], true);
+        return in_array(strtoupper($service->code), ['BVN', 'NIN', 'PHONE', 'US_PHONE', 'CAC', 'US_BIODATA', 'US_ADDRESS', 'US_SSN'], true);
     }
 
     private function resolveProvider(VerificationService $service): ?VerificationProviderInterface
@@ -207,6 +205,9 @@ class VerificationOrchestrator
             'NIN' => 'nin',
             'PHONE', 'US_PHONE' => 'phone',
             'CAC' => 'cac',
+            'US_BIODATA' => 'us_biodata',
+            'US_ADDRESS' => 'us_address',
+            'US_SSN' => 'us_ssn',
             default => null,
         };
     }
@@ -223,7 +224,7 @@ class VerificationOrchestrator
             }
 
             return match ($key) {
-                'bvn', 'nin', 'ssn', 'registration_number' => Str::mask($value, '*', 3, max(strlen($value) - 5, 0)),
+                'bvn', 'nin', 'ssn', 'tin', 'registration_number' => Str::mask($value, '*', 3, max(strlen($value) - 5, 0)),
                 'phone', 'identifier' => Str::mask($value, '*', 3, max(strlen($value) - 5, 0)),
                 default => $value,
             };

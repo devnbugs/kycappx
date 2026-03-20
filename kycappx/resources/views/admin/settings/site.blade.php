@@ -62,7 +62,7 @@
                     <div>
                         <x-input-label for="default_funding_provider" value="Default Funding Provider" />
                         <select id="default_funding_provider" name="default_funding_provider" class="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100">
-                            @foreach (['paystack' => 'Paystack', 'kora' => 'Kora'] as $value => $label)
+                            @foreach (['paystack' => 'Paystack', 'kora' => 'Kora', 'squad' => 'Squad'] as $value => $label)
                                 <option value="{{ $value }}" @selected(old('default_funding_provider', $settings->default_funding_provider) === $value)>{{ $label }}</option>
                             @endforeach
                         </select>
@@ -118,6 +118,16 @@
                         <input type="hidden" name="kora_dva_enabled" value="0">
                         <input type="checkbox" name="kora_dva_enabled" value="1" class="rounded border-slate-300 text-slate-950 shadow-sm focus:ring-slate-300 dark:border-slate-600 dark:bg-slate-900 dark:text-teal-400 dark:focus:ring-teal-500" @checked(old('kora_dva_enabled', $settings->kora_dva_enabled))>
                         <span>Enable Kora virtual accounts</span>
+                    </label>
+                    <label class="inline-flex items-center gap-3 text-sm text-slate-700 dark:text-slate-200">
+                        <input type="hidden" name="squad_dva_enabled" value="0">
+                        <input type="checkbox" name="squad_dva_enabled" value="1" class="rounded border-slate-300 text-slate-950 shadow-sm focus:ring-slate-300 dark:border-slate-600 dark:bg-slate-900 dark:text-teal-400 dark:focus:ring-teal-500" @checked(old('squad_dva_enabled', $settings->squad_dva_enabled))>
+                        <span>Enable Squad virtual accounts</span>
+                    </label>
+                    <label class="inline-flex items-center gap-3 text-sm text-slate-700 dark:text-slate-200">
+                        <input type="hidden" name="sms_enabled" value="0">
+                        <input type="checkbox" name="sms_enabled" value="1" class="rounded border-slate-300 text-slate-950 shadow-sm focus:ring-slate-300 dark:border-slate-600 dark:bg-slate-900 dark:text-teal-400 dark:focus:ring-teal-500" @checked(old('sms_enabled', $settings->sms_enabled))>
+                        <span>Enable Squad SMS sender and bulk messaging</span>
                     </label>
                 </div>
 

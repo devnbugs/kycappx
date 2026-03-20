@@ -181,8 +181,8 @@ return [
                 'label' => 'Advance CAC',
                 'description' => 'Nigeria corporate lookup for business verification and KYB reviews.',
                 'countries' => ['NG'],
-                'endpoint' => null,
-                'required' => false,
+                'endpoint' => '/verification/cac/advance',
+                'required' => true,
             ],
             'us_biodata' => [
                 'label' => 'USA Biodata',
@@ -199,10 +199,41 @@ return [
                 'required' => false,
             ],
             'us_ssn' => [
-                'label' => 'USA SSN Information',
-                'description' => 'United States social security number information checks for enhanced reviews.',
+                'label' => 'USA SSN / TIN Information',
+                'description' => 'United States SSN and TIN screening for enhanced identity reviews.',
                 'countries' => ['US'],
-                'endpoint' => null,
+                'endpoint' => '/identitypass/verification/global/tin-check',
+                'required' => true,
+            ],
+        ],
+    ],
+
+    'squad' => [
+        'base_url' => env('SQUAD_BASE_URL', env('APP_ENV', 'production') === 'production' ? 'https://api-d.squadco.com' : 'https://sandbox-api-d.squadco.com'),
+        'secret_key' => env('SQUAD_SECRET_KEY'),
+        'public_key' => env('SQUAD_PUBLIC_KEY'),
+        'beneficiary_account' => env('SQUAD_BENEFICIARY_ACCOUNT'),
+        'bank_name' => env('SQUAD_BANK_NAME', 'GTBank'),
+        'sms_sender_id' => env('SQUAD_SMS_SENDER_ID', 'S-Alert'),
+        'products' => [
+            'virtual_accounts' => [
+                'label' => 'Virtual Accounts',
+                'description' => 'Create BVN-backed NGN virtual accounts for customer wallet funding.',
+                'required' => true,
+            ],
+            'webhooks' => [
+                'label' => 'Webhook Validation',
+                'description' => 'Validate Squad transfer notifications and credit wallets automatically.',
+                'required' => true,
+            ],
+            'sms_messages' => [
+                'label' => 'Instant SMS',
+                'description' => 'Send single or bulk SMS messages with a sender ID from the customer workspace.',
+                'required' => true,
+            ],
+            'sms_templates' => [
+                'label' => 'SMS Templates',
+                'description' => 'Create reusable SMS templates inside Squad for onboarding and status notifications.',
                 'required' => false,
             ],
         ],

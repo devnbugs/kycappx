@@ -37,6 +37,14 @@ class ProviderManagementController extends Controller
                 'enabled_products' => count($this->providerFeatures->enabledProducts('kora')),
             ],
             [
+                'name' => 'Squad',
+                'code' => 'squad',
+                'configured' => filled(config('services.squad.secret_key')),
+                'base_url' => config('services.squad.base_url'),
+                'products' => count(config('services.squad.products', [])),
+                'enabled_products' => count($this->providerFeatures->enabledProducts('squad')),
+            ],
+            [
                 'name' => 'Paystack',
                 'code' => 'paystack',
                 'configured' => filled(config('services.paystack.secret_key')),

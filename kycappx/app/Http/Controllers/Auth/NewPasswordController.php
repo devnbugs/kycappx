@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
-use App\Services\Security\TurnstileService;
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -30,10 +29,8 @@ class NewPasswordController extends Controller
      *
      * @throws ValidationException
      */
-    public function store(Request $request, TurnstileService $turnstile): RedirectResponse
+    public function store(Request $request): RedirectResponse
     {
-        $turnstile->ensureValidRequest($request, 'password_reset');
-
         $request->validate([
             'token' => ['required'],
             'email' => ['required', 'email'],

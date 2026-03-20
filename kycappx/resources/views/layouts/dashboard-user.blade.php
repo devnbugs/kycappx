@@ -4,6 +4,8 @@
         ['label' => 'Wallet', 'route' => 'wallet', 'pattern' => 'wallet*', 'icon' => 'credit-card'],
         ['label' => 'Transactions', 'route' => 'transactions', 'pattern' => 'transactions', 'icon' => 'banknotes'],
         ['label' => 'Verifications', 'route' => 'verifications.index', 'pattern' => 'verifications.*', 'icon' => 'shield-check'],
+        ['label' => 'SMS', 'route' => 'sms.index', 'pattern' => 'sms.*', 'icon' => 'chat-bubble-left-right'],
+        ['label' => 'KYC Strength', 'route' => 'kyc.edit', 'pattern' => 'kyc.*', 'icon' => 'identification'],
         ['label' => 'API Keys', 'route' => 'api.keys', 'pattern' => 'api.keys*', 'icon' => 'key'],
         ['label' => 'Profile', 'route' => 'profile.edit', 'pattern' => 'profile.*', 'icon' => 'cog-6-tooth'],
     ];
@@ -59,6 +61,7 @@
                     <div class="px-3 text-xs font-semibold uppercase tracking-[0.28em] text-white/40">Services</div>
                     <nav class="mt-3 space-y-1.5">
                         @foreach ($serviceLinks as $service)
+                            @if (is_object($service) && isset($service->id))
                             <a
                                 href="{{ route('verifications.create', ['service' => $service->id]) }}"
                                 @class([
@@ -71,9 +74,11 @@
                                     'BVN' => 'identification',
                                     'NIN' => 'shield-check',
                                     'CAC' => 'building-office',
-                                    'TIN' => 'receipt-percent',
                                     'PHONE' => 'device-phone-mobile',
-                                    'ACCOUNT' => 'banknotes',
+                                    'US_PHONE' => 'device-phone-mobile',
+                                    'US_BIODATA' => 'user-circle',
+                                    'US_ADDRESS' => 'map-pin',
+                                    'US_SSN' => 'finger-print',
                                     default => 'sparkles',
                                 }" variant="mini" />
                                 <span>{{ strtoupper($service->code) }}</span>
@@ -81,6 +86,7 @@
                                     <span class="ms-auto text-[10px] uppercase tracking-[0.2em] text-white/40">Soon</span>
                                 @endunless
                             </a>
+                            @endif
                         @endforeach
                     </nav>
                 </div>
@@ -130,20 +136,28 @@
                                     @endif
                                 </div>
 
-                                <p class="section-kicker mt-4">{{ $header ?? 'Operations overview' }}</p>
+                                <p class="section-kicker mt-4">{{ $header ?? 'Page' }}</p>
                                 <!--h1 class="mt-2 text-2xl font-semibold text-slate-950 text-balance dark:text-white sm:text-3xl">{{ $header ?? 'Operations overview' }}</h1>
                                 <p class="mt-2 max-w-3xl text-sm leading-6 text-slate-600 dark:text-slate-300">
                                     Wallet topups, dedicated account cards, verifications, API keys, and security settings from one responsive control surface.
                                 </p-->
                             </div>
                         </div>
-
+                      
+                      <br>
+                      
                         <div class="flex flex-wrap items-center gap-2">
                             <a href="{{ route('wallet') }}">
                                 <flux:button variant="primary" color="teal" icon="plus-circle">Top up</flux:button>
                             </a>
+                            <a href="{{ route('kyc.edit') }}">
+                                <flux:button variant="outline" icon="identification">KYC</flux:button>
+                            </a>
                             <a href="{{ route('verifications.create') }}">
                                 <flux:button variant="outline" icon="shield-check">Run service</flux:button>
+                            </a>
+                            <a href="{{ route('sms.index') }}">
+                                <flux:button variant="outline" icon="chat-bubble-left-right">SMS</flux:button>
                             </a>
                             <x-ui.theme-toggle class="hidden lg:inline-flex" />
                         </div>
@@ -200,9 +214,11 @@
                             <div class="px-3 text-xs font-semibold uppercase tracking-[0.28em] text-white/40">Services</div>
                             <div class="mt-3 flex flex-wrap gap-2">
                                 @foreach ($serviceLinks as $service)
+                                    @if (is_object($service) && isset($service->id))
                                     <a href="{{ route('verifications.create', ['service' => $service->id]) }}" class="service-chip text-white/85">
                                         {{ strtoupper($service->code) }}
                                     </a>
+                                    @endif
                                 @endforeach
                             </div>
                         </div>
@@ -223,6 +239,13 @@
                     <flux:callout variant="success" icon="check-circle">
                         <flux:callout.heading>Status updated</flux:callout.heading>
                         <flux:callout.text>{{ session('status') }}</flux:callout.text>
+                    </flux:callout>
+                @endif
+
+                @if (session('sms_status'))
+                    <flux:callout variant="warning" icon="exclamation-triangle">
+                        <flux:callout.heading>SMS update</flux:callout.heading>
+                        <flux:callout.text>{{ session('sms_status') }}</flux:callout.text>
                     </flux:callout>
                 @endif
 

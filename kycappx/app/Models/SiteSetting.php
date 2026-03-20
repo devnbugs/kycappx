@@ -21,6 +21,8 @@ class SiteSetting extends Model
         'dva_enabled',
         'paystack_dva_enabled',
         'kora_dva_enabled',
+        'squad_dva_enabled',
+        'sms_enabled',
         'user_pro_discount_rate',
         'default_funding_provider',
         'logo_text',
@@ -40,6 +42,8 @@ class SiteSetting extends Model
             'dva_enabled' => 'boolean',
             'paystack_dva_enabled' => 'boolean',
             'kora_dva_enabled' => 'boolean',
+            'squad_dva_enabled' => 'boolean',
+            'sms_enabled' => 'boolean',
             'user_pro_discount_rate' => 'decimal:2',
         ];
     }

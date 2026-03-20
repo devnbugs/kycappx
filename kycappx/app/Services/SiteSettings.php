@@ -70,6 +70,8 @@ class SiteSettings
             'dva_enabled' => true,
             'paystack_dva_enabled' => true,
             'kora_dva_enabled' => true,
+            'squad_dva_enabled' => true,
+            'sms_enabled' => true,
             'user_pro_discount_rate' => 10,
             'default_funding_provider' => 'paystack',
             'logo_text' => 'KX',

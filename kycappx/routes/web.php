@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\VerificationServiceController;
 use App\Http\Controllers\Dashboard\ApiKeyController;
 use App\Http\Controllers\Dashboard\KycController;
 use App\Http\Controllers\Dashboard\KoraFundingController;
+use App\Http\Controllers\Dashboard\SmsController;
 use App\Http\Controllers\Dashboard\VirtualAccountController;
 use App\Http\Controllers\Dashboard\VerificationController;
 use App\Http\Controllers\DashboardController;
@@ -15,6 +16,7 @@ use App\Http\Controllers\Profile\TwoFactorController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Webhooks\KoraWebhookController;
 use App\Http\Controllers\Webhooks\PaystackWebhookController;
+use App\Http\Controllers\Webhooks\SquadWebhookController;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Support\Facades\Route;
 
@@ -49,6 +51,12 @@ Route::middleware('auth')->group(function () {
         Route::get('/api-keys', 'index')->name('api.keys');
         Route::post('/api-keys', 'store')->name('api.keys.store');
         Route::delete('/api-keys/{apiKey}', 'destroy')->name('api.keys.destroy');
+    });
+
+    Route::controller(SmsController::class)->group(function () {
+        Route::get('/sms', 'index')->name('sms.index');
+        Route::post('/sms/send', 'store')->name('sms.store');
+        Route::post('/sms/templates', 'storeTemplate')->name('sms.templates.store');
     });
 
     Route::controller(ProfileController::class)->group(function () {
@@ -103,5 +111,9 @@ Route::post('/webhooks/kora', [KoraWebhookController::class, 'handle'])
 Route::post('/webhooks/paystack', [PaystackWebhookController::class, 'handle'])
     ->withoutMiddleware([ValidateCsrfToken::class])
     ->name('webhooks.paystack');
+
+Route::post('/webhooks/squad', [SquadWebhookController::class, 'handle'])
+    ->withoutMiddleware([ValidateCsrfToken::class])
+    ->name('webhooks.squad');
 
 require __DIR__.'/auth.php';

@@ -1,7 +1,7 @@
 @php
     $accountsByProvider = $virtualAccounts->keyBy('provider');
     $paystackAccount = $accountsByProvider->get('paystack');
-    $koraAccount = $accountsByProvider->get('kora');
+    $squadAccount = $accountsByProvider->get('squad');
 @endphp
 
 <x-layouts.dashboard-user title="Wallet" header="Wallet Operations">
@@ -20,8 +20,8 @@
             </div>
 
             <div class="mt-8 flex flex-wrap gap-2 text-xs">
-                <span class="badge-soft border-white/10 bg-white/10 text-white">Kora {{ $gatewayStatus['kora'] ? 'configured' : 'not configured' }}</span>
-                <span class="badge-soft border-white/10 bg-white/10 text-white">Paystack {{ $gatewayStatus['paystack'] ? 'configured' : 'not configured' }}</span>
+                <span class="badge-soft border-white/10 bg-white/10 text-white">Safe and Secured</span>
+                <span class="badge-soft border-white/10 bg-white/10 text-white">Stable Connection</span>
             </div>
         </div>
 
@@ -29,13 +29,13 @@
             <div class="flex items-center justify-between gap-3">
                 <div>
                     <p class="section-kicker">Fund Wallet</p>
-                    <h2 class="mt-3 text-2xl font-semibold text-slate-950 dark:text-slate-50">Initialize a new Kora top-up</h2>
+                    <h2 class="mt-3 text-2xl font-semibold text-slate-950 dark:text-slate-50">Top-up With with Checkout</h2>
                 </div>
                 <x-ui.status-badge :value="$siteSettings->wallet_funding_enabled ? ($gatewayStatus['kora'] ? 'Live' : 'Setup Required') : 'Disabled'" :tone="$siteSettings->wallet_funding_enabled ? ($gatewayStatus['kora'] ? 'success' : 'warning') : 'warning'" />
             </div>
 
             <p class="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                Wallet credits are only recorded after a signed webhook confirms the payment, so the balance stays idempotent even if Kora retries the callback.
+                Via Card and USSD
             </p>
 
             <form method="POST" action="{{ route('wallet.fund.kora') }}" class="mt-6 space-y-5">
@@ -57,23 +57,23 @@
                 <div class="flex flex-wrap gap-3">
                     @if ($gatewayStatus['kora'] && $siteSettings->wallet_funding_enabled && $providerProducts['kora_checkout'])
                         <x-ui.button type="submit">
-                            Continue to Kora Checkout
+                            Continue
                         </x-ui.button>
                     @else
                         <x-ui.button type="submit" variant="secondary" disabled>
-                            Continue to Kora Checkout
+                            Continue
                         </x-ui.button>
                     @endif
 
                     <a href="{{ route('transactions') }}">
-                        <x-ui.button variant="secondary">Review Transactions</x-ui.button>
+                        <x-ui.button variant="secondary">Recent Transactions</x-ui.button>
                     </a>
                 </div>
             </form>
 
             @unless ($gatewayStatus['kora'] && $siteSettings->wallet_funding_enabled && $providerProducts['kora_checkout'])
                 <div class="mt-5 rounded-[1.5rem] border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-900 dark:border-amber-900/60 dark:bg-amber-950/50 dark:text-amber-200">
-                    {{ ! $providerProducts['kora_checkout'] ? 'Kora checkout has been turned off from the admin provider controls.' : ($siteSettings->wallet_funding_enabled ? 'Add `KORA_SECRET_KEY` and `KORA_REDIRECT_URL` to enable production wallet funding.' : 'Wallet funding has been disabled by the site administrator.') }}
+                    {{ ! $providerProducts['kora_checkout'] ? 'This checkout is Unavailable.' : ($siteSettings->wallet_funding_enabled ? 'Add `KORA_SECRET_KEY` and `KORA_REDIRECT_URL` to enable production wallet funding.' : 'Wallet funding has been disabled by the site administrator.') }}
                 </div>
             @endunless
         </div>
@@ -81,14 +81,14 @@
 
     <section class="grid gap-4 lg:grid-cols-2">
         <div class="surface-card p-6 sm:p-8">
-            <div class="flex items-start justify-between gap-4">
+            <div class="flex items-start justify-between">
                 <div>
-                    <p class="section-kicker">Paystack DVA</p>
+                    <p class="section-kicker">Funding Accounts</p>
                     <h3 class="mt-3 text-2xl font-semibold text-slate-950 dark:text-slate-50">
                         {{ $paystackAccount?->account_number ?: 'Create an account card' }}
                     </h3>
                     <p class="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                        Assign a Paystack dedicated account so customers can top up by direct bank transfer and receive wallet credits through webhooks.
+                        Use this Account Number and Deposit in to your Wallet
                     </p>
                 </div>
                 <x-ui.status-badge :value="$paystackAccount?->status ?? ($gatewayStatus['paystack'] ? 'Ready' : 'Setup Required')" :tone="match ($paystackAccount?->status ?? null) {
@@ -125,44 +125,47 @@
         <div class="surface-card p-6 sm:p-8">
             <div class="flex items-start justify-between gap-4">
                 <div>
-                    <p class="section-kicker">Kora Virtual Account</p>
+                    <p class="section-kicker">Squad Virtual Account</p>
                     <h3 class="mt-3 text-2xl font-semibold text-slate-950 dark:text-slate-50">
-                        {{ $koraAccount?->account_number ?: 'Create a Kora virtual account' }}
+                        {{ $squadAccount?->account_number ?: 'Create a Squad virtual account' }}
                     </h3>
                     <p class="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                        Kora permanent virtual accounts require BVN-backed KYC. Once assigned, incoming transfers can credit the wallet automatically.
+                        Squad virtual accounts require a complete NG KYC profile and BVN-backed matching. Incoming transfers can credit the wallet automatically after the Squad webhook arrives.
                     </p>
                 </div>
-                <x-ui.status-badge :value="$koraAccount?->status ?? ($gatewayStatus['kora'] ? 'Ready' : 'Setup Required')" :tone="match ($koraAccount?->status ?? null) {
+                <x-ui.status-badge :value="$squadAccount?->status ?? ($gatewayStatus['squad'] ? 'Ready' : 'Setup Required')" :tone="match ($squadAccount?->status ?? null) {
                     'active' => 'success',
                     'pending' => 'warning',
                     'failed' => 'danger',
-                    default => $gatewayStatus['kora'] ? 'info' : 'warning',
+                    default => $gatewayStatus['squad'] ? 'info' : 'warning',
                 }" />
             </div>
 
-            @if ($koraAccount?->account_number)
+            @if ($squadAccount?->account_number)
                 <div class="mt-6 rounded-[1.5rem] border border-slate-200/80 bg-slate-50/80 p-5 dark:border-white/10 dark:bg-white/5">
-                    <div class="text-sm text-slate-500 dark:text-slate-400">{{ $koraAccount->bank_name }}</div>
-                    <div class="mt-2 font-mono text-3xl font-semibold text-slate-950 dark:text-white">{{ $koraAccount->account_number }}</div>
-                    <div class="mt-2 text-sm text-slate-600 dark:text-slate-300">{{ $koraAccount->account_name }}</div>
+                    <div class="text-sm text-slate-500 dark:text-slate-400">{{ $squadAccount->bank_name }}</div>
+                    <div class="mt-2 font-mono text-3xl font-semibold text-slate-950 dark:text-white">{{ $squadAccount->account_number }}</div>
+                    <div class="mt-2 text-sm text-slate-600 dark:text-slate-300">{{ $squadAccount->account_name }}</div>
                 </div>
             @else
-                <form method="POST" action="{{ route('wallet.accounts.store', ['provider' => 'kora']) }}" class="mt-6 space-y-4">
+                <div class="mt-6 rounded-[1.25rem] border border-slate-200/80 bg-slate-50/80 px-4 py-4 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-300">
+                    @if ($squadRequirements['ready'])
+                        Your KYC profile has the fields Squad requires. You can create the account immediately.
+                    @else
+                        Update the KYC page with {{ collect($squadRequirements['missing'])->implode(', ') }} before assigning a Squad virtual account.
+                    @endif
+                </div>
+
+                <form method="POST" action="{{ route('wallet.accounts.store', ['provider' => 'squad']) }}" class="mt-6 space-y-4">
                     @csrf
 
                     <div>
-                        <x-input-label for="kora_bvn" value="BVN" />
-                        <x-text-input id="kora_bvn" name="bvn" type="text" class="mt-2" :value="old('bvn', data_get(auth()->user()->kyc_profile, 'bvn'))" placeholder="22123456789" />
+                        <x-input-label for="squad_bvn" value="BVN" />
+                        <x-text-input id="squad_bvn" name="bvn" type="text" class="mt-2" :value="old('bvn', data_get(auth()->user()->kyc_profile, 'bvn'))" placeholder="22123456789" />
                     </div>
 
-                    <div>
-                        <x-input-label for="kora_nin" value="NIN (Optional)" />
-                        <x-text-input id="kora_nin" name="nin" type="text" class="mt-2" :value="old('nin', data_get(auth()->user()->kyc_profile, 'nin'))" placeholder="12345678901" />
-                    </div>
-
-                    <flux:button type="submit" variant="primary" color="teal" :disabled="! ($siteSettings->dva_enabled && $siteSettings->kora_dva_enabled && $gatewayStatus['kora'] && $providerProducts['kora_virtual_accounts'])">
-                        Assign Kora account
+                    <flux:button type="submit" variant="primary" color="teal" :disabled="! ($siteSettings->dva_enabled && $siteSettings->squad_dva_enabled && $gatewayStatus['squad'] && $providerProducts['squad_virtual_accounts'] && $squadRequirements['ready'])">
+                        Assign Squad account
                     </flux:button>
                 </form>
             @endif

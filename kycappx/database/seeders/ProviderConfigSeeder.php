@@ -65,7 +65,7 @@ class ProviderConfigSeeder extends Seeder
             ['provider' => 'kora'],
             [
                 'is_active' => false,
-                'priority' => 2,
+                'priority' => 3,
                 'config' => [
                     'channel' => 'payments',
                     'mode' => 'live',
@@ -82,6 +82,27 @@ class ProviderConfigSeeder extends Seeder
                         'payouts' => false,
                         'balances' => false,
                         'conversions' => false,
+                    ],
+                ],
+            ]
+        );
+
+        ProviderConfig::updateOrCreate(
+            ['provider' => 'squad'],
+            [
+                'is_active' => false,
+                'priority' => 2,
+                'config' => [
+                    'channel' => 'payments',
+                    'mode' => 'live',
+                    'timeout_seconds' => 30,
+                    'country_scope' => ['NG'],
+                    'default_product' => 'virtual_accounts',
+                    'enabled_products' => [
+                        'virtual_accounts' => true,
+                        'webhooks' => true,
+                        'sms_messages' => true,
+                        'sms_templates' => true,
                     ],
                 ],
             ]

@@ -4,19 +4,36 @@
             <header class="surface-card px-5 py-4 sm:px-6">
                 <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                     <div class="flex items-center gap-3">
-                        <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-950 text-lg font-bold text-white shadow-lg">{{ $siteSettings->logo_text ?? 'KX' }}</div>
+                        <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-950 text-lg font-bold text-white shadow-lg">{{ $siteSettings->logo_text ?? 'O' }}</div>
                         <div>
                             <div class="text-lg font-semibold text-slate-950 dark:text-slate-50">{{ $siteSettings->site_name ?? config('app.name') }}</div>
-                            <div class="text-sm text-slate-500 dark:text-slate-400">{{ $siteSettings->site_tagline ?? 'Verification and wallet operations platform' }}</div>
+                            <div class="text-sm text-slate-500 dark:text-slate-400">Version 2026.02.1</div>
                         </div>
                     </div>
 
                     <div class="flex flex-wrap items-center gap-3">
-                        <span class="badge-soft">Prembly</span>
-                        <span class="badge-soft">Kora</span>
-                        <span class="badge-soft">Paystack</span>
-                        <span class="badge-soft">Cloudflare</span>
-                    </div>
+                      @auth
+                      <a href="{{ route('dashboard') }}">
+                        <span class="badge-soft text-lg px-4 py-2 cursor-pointer hover:opacity-80">
+                          Dashboard
+                        </span>
+                      </a>
+                      @else
+                      @if (Route::has('register') && $siteSettings->registration_enabled)
+                      <a href="{{ route('register') }}">
+                        <span class="badge-soft text-lg px-5 py-2 rounded-xl shadow-sm hover:shadow-md transition cursor-pointer">
+                          Register
+                        </span>
+                      </a>
+                      @endif
+                      
+                      <a href="{{ route('login') }}">
+                        <span class="badge-soft text-lg px-5 py-2 rounded-xl shadow-sm hover:shadow-md transition cursor-pointer">
+                          Login
+                        </span>
+                      </a>
+                      @endauth
+                  </div>
                 </div>
             </header>
 
@@ -26,23 +43,35 @@
                     <div class="absolute bottom-0 left-0 h-64 w-64 rounded-full bg-teal-400/20 blur-3xl"></div>
 
                     <div class="relative">
-                        <p class="section-kicker !text-teal-200">Production KYC workspace</p>
+                        <p class="section-kicker !text-teal-200">Beyond Identity</p>
                         <h1 class="mt-4 max-w-3xl text-4xl font-semibold leading-tight text-balance sm:text-5xl">
-                            Nigeria and USA verification, wallet funding, and operator control from one production-ready surface.
+                            Speedo Boost Ai Powered KYC/KYB Core
                         </h1>
-                        <p class="mt-5 max-w-2xl text-base leading-7 text-slate-200/80">
-                            Launch faster with Prembly-powered KYC, Paystack and Kora payment rails, Cloudflare Turnstile protection, responsive customer dashboards, and an admin cockpit that can toggle services without code changes.
-                        </p>
+                      
+                      <br>
+                      
+                      <flux:separator />
+                      
+                      <br>
+                      
+                      <div class="flex flex-wrap items-center gap-6">
+                        <span class="badge-soft">NIN/vNIN Services</span>
+                        <span class="badge-soft">BVN Services</span>
+                        <span class="badge-soft">TIN Services</span>
+                        <span class="badge-soft">VIN Verification</span>
+                        <span class="badge-soft">WAEC Results</span>
+                        <span class="badge-soft">VIN Verification</span>
+                      </div>
 
                         <div class="mt-8 flex flex-wrap gap-3">
                             @auth
                                 <a href="{{ route('dashboard') }}">
-                                    <x-ui.button>Open Workspace</x-ui.button>
+                                    <x-ui.button>Dashboard</x-ui.button>
                                 </a>
                             @else
                                 @if (Route::has('register') && $siteSettings->registration_enabled)
                                     <a href="{{ route('register') }}">
-                                        <x-ui.button>Create Workspace</x-ui.button>
+                                        <x-ui.button>Create Account</x-ui.button>
                                     </a>
                                 @endif
                                 <a href="{{ route('login') }}">
@@ -54,15 +83,15 @@
                         <div class="mt-10 grid gap-4 sm:grid-cols-3">
                             <div class="rounded-[1.5rem] border border-white/10 bg-white/10 p-5">
                                 <div class="text-sm text-white/60">KYC coverage</div>
-                                <div class="mt-3 text-2xl font-semibold">NG + US service catalog</div>
+                                <div class="mt-3 text-2xl font-semibold">WorldWide KYC Services Applied</div>
                             </div>
                             <div class="rounded-[1.5rem] border border-white/10 bg-white/10 p-5">
                                 <div class="text-sm text-white/60">Payments</div>
-                                <div class="mt-3 text-2xl font-semibold">Kora checkout and Paystack DVA</div>
+                                <div class="mt-3 text-2xl font-semibold">99% On Scalling Transactions</div>
                             </div>
                             <div class="rounded-[1.5rem] border border-white/10 bg-white/10 p-5">
                                 <div class="text-sm text-white/60">Security</div>
-                                <div class="mt-3 text-2xl font-semibold">Turnstile + 2FA ready</div>
+                                <div class="mt-3 text-2xl font-semibold">True Privacy and Safety</div>
                             </div>
                         </div>
                     </div>
@@ -78,14 +107,14 @@
                         </div>
                     </div>
 
-                    <div class="metric-card">
+                    <!--div class="metric-card">
                         <p class="section-kicker">What ships</p>
                         <div class="mt-4 space-y-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
                             <p>Responsive customer and admin workspaces across mobile, tablet, laptop, and wide desktop screens.</p>
-                            <p>Admin-managed switches for providers and KYC services, including Nigeria and United States verification products.</p>
+                            <!--p>Admin-managed switches for providers and KYC services, including Nigeria and United States verification products.</p>
                             <p>Wallet operations with Kora hosted checkout, Kora virtual accounts, and Paystack dedicated virtual accounts.</p>
                         </div>
-                    </div>
+                    </div-->
                 </div>
             </section>
 
@@ -120,7 +149,7 @@
                     <div>
                         <p class="section-kicker">Ready to launch</p>
                         <h2 class="mt-3 text-3xl font-semibold text-slate-950 text-balance dark:text-slate-50">
-                            Ready to Identify!
+                            Start with a customer-facing KYC and wallet experience, then scale into the admin control plane as traffic grows.
                         </h2>
                     </div>
 
@@ -152,11 +181,11 @@
                     </div>
 
                     <div class="flex flex-wrap items-center gap-4 text-sm text-slate-500 dark:text-slate-400">
-                        <span>{{ $siteSettings->support_email ?: 'support@example.com' }}</span>
+                        <span>{{ $siteSettings->support_email ?: 'hello@onetera.serv00.net' }}</span>
                         @if ($siteSettings->support_phone)
                             <span>{{ $siteSettings->support_phone }}</span>
                         @endif
-                        <a href="{{ route('login') }}" class="font-medium text-slate-700 hover:text-slate-950 dark:text-slate-300 dark:hover:text-white">Workspace access</a>
+                        <a href="{{ route('login') }}" class="font-medium text-slate-700 hover:text-slate-950 dark:text-slate-300 dark:hover:text-white">Login</a>
                     </div>
                 </div>
             </footer>

@@ -82,7 +82,7 @@ class VerificationServiceSeeder extends Seeder
             ],
             [
                 'code' => 'US_SSN',
-                'name' => 'US SSN Information Review',
+                'name' => 'US SSN / TIN Check',
                 'type' => 'kyc',
                 'country' => 'US',
                 'is_active' => true,

@@ -100,6 +100,11 @@ class User extends Authenticatable
         return $this->hasMany(AuditLog::class);
     }
 
+    public function smsDispatches(): HasMany
+    {
+        return $this->hasMany(SmsDispatch::class);
+    }
+
     public function isAdmin(): bool
     {
         return $this->hasAnyRole(['super-admin', 'admin', 'support']);

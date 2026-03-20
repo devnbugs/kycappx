@@ -40,6 +40,7 @@ class KycController extends Controller
             'middle_name' => ['nullable', 'string', 'max:100'],
             'last_name' => ['required', 'string', 'max:100'],
             'dob' => ['required', 'date'],
+            'gender' => ['nullable', Rule::in(['male', 'female', '1', '2'])],
             'phone' => ['required', 'string', 'max:30'],
             'nin' => ['nullable', 'digits:11'],
             'bvn' => ['nullable', 'digits:11'],

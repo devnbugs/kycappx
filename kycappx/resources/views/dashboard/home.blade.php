@@ -16,9 +16,9 @@
                     @endif
                 </div>
 
-                <h2 class="mt-5 max-w-3xl text-3xl font-semibold text-balance">Everything that needs attention is visible in one pass.</h2>
+                <h2 class="mt-5 max-w-3xl text-3xl font-semibold text-balance">Welcome Back!</h2>
                 <p class="mt-3 max-w-2xl text-sm leading-6 text-slate-200/80">
-                    Track wallet balance, provision dedicated virtual accounts, launch verification runs, and review API readiness without leaving the workspace.
+                    Your Balance Will Be Updated Every Page Refresh.
                 </p>
 
                 <div class="mt-8 grid gap-4 sm:grid-cols-2">
@@ -26,19 +26,19 @@
                         <div class="text-sm text-white/60">Available balance</div>
                         <div class="mt-2 text-4xl font-semibold">NGN {{ number_format($stats['wallet_balance'], 2) }}</div>
                     </div>
-                    <div class="rounded-[1.5rem] border border-white/10 bg-white/10 p-5">
+                    <!--div class="rounded-[1.5rem] border border-white/10 bg-white/10 p-5">
                         <div class="text-sm text-white/60">Account cards</div>
                         <div class="mt-2 text-4xl font-semibold">{{ $virtualAccounts->count() }}</div>
                         <div class="mt-2 text-sm text-white/65">Paystack and Kora DVA provisioning</div>
-                    </div>
+                    </div-->
                 </div>
 
                 <div class="mt-8 flex flex-wrap gap-3">
                     <a href="{{ route('kyc.edit') }}">
-                        <flux:button variant="outline" class="border-white/20 bg-white/10 text-white hover:bg-white/15">KYC strength</flux:button>
+                        <flux:button variant="outline" class="border-white/20 bg-white/10 text-white hover:bg-white/15">Account Status</flux:button>
                     </a>
                     <a href="{{ route('verifications.create') }}">
-                        <flux:button variant="primary" color="teal" icon="shield-check">Run verification</flux:button>
+                        <flux:button variant="primary" color="teal" icon="shield-check"></flux:button>
                     </a>
                     <a href="{{ route('wallet') }}">
                         <flux:button variant="outline" class="border-white/20 bg-white/10 text-white hover:bg-white/15">Manage wallet</flux:button>
@@ -66,7 +66,7 @@
                 <div class="mt-2 text-sm text-slate-600 dark:text-slate-300">Submitted verification requests across all services.</div>
             </div>
 
-            <div class="metric-card">
+            <!--div class="metric-card">
                 <div class="text-sm text-slate-500 dark:text-slate-400">Active API keys</div>
                 <div class="mt-3 text-3xl font-semibold text-slate-950 dark:text-slate-50">{{ number_format($stats['active_api_keys']) }}</div>
                 <div class="mt-2 text-sm text-slate-600 dark:text-slate-300">Keys that can still access your account.</div>
@@ -82,11 +82,11 @@
                 <div class="text-sm text-slate-500 dark:text-slate-400">Preferred funding</div>
                 <div class="mt-3 text-3xl font-semibold text-slate-950 dark:text-slate-50">{{ strtoupper(auth()->user()->preferred_funding_provider ?? ($siteSettings->default_funding_provider ?? 'paystack')) }}</div>
                 <div class="mt-2 text-sm text-slate-600 dark:text-slate-300">Your default provider for DVA and funding flows.</div>
-            </div>
+            </div-->
         </div>
     </section>
 
-    <section class="grid gap-4 lg:grid-cols-2">
+    <!--section class="grid gap-4 lg:grid-cols-2">
         @foreach ($virtualAccountProviders as $provider)
             @php($account = $accountsByProvider->get($provider['code']))
             <div class="{{ $account?->account_number ? 'account-card' : 'surface-card p-6 sm:p-8' }}">
@@ -127,7 +127,7 @@
                 </div>
             </div>
         @endforeach
-    </section>
+    </section-->
 
     <section class="grid gap-4 lg:grid-cols-[0.9fr,1.1fr]">
         <div class="surface-card p-6">

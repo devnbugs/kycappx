@@ -72,7 +72,7 @@
 
         <div class="rounded-[1.5rem] border border-slate-200/80 bg-slate-50/90 p-4 text-sm text-slate-600 dark:border-white/10 dark:bg-white/5 dark:text-slate-300">
             <div class="font-semibold text-slate-950 dark:text-white">Upgrade path</div>
-            <p class="mt-2">Owners can promote accounts to <span class="font-semibold">User Pro</span> for discount-aware service pricing and stronger security defaults like 2FA.</p>
+            <p class="mt-2">Admins can promote accounts to <span class="font-semibold">User Pro</span> for discount-aware service pricing and stronger security defaults like 2FA.</p>
         </div>
     </div>
 </x-guest-layout>

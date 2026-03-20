@@ -38,7 +38,7 @@ class ProfileUpdateRequest extends FormRequest
             'company_name' => ['nullable', 'string', 'max:255'],
             'timezone' => ['required', 'timezone'],
             'theme_preference' => ['required', Rule::in(['light', 'dark', 'system'])],
-            'preferred_funding_provider' => ['nullable', Rule::in(['paystack', 'kora'])],
+            'preferred_funding_provider' => ['nullable', Rule::in(['paystack', 'kora', 'squad'])],
             'settings' => ['nullable', 'array'],
             'settings.security_alerts' => ['nullable', 'boolean'],
             'settings.monthly_reports' => ['nullable', 'boolean'],

@@ -92,7 +92,7 @@ class UserManagementController extends Controller
             'timezone' => ['required', 'timezone'],
             'status' => ['required', Rule::in(['active', 'suspended', 'pending'])],
             'theme_preference' => ['required', Rule::in(['light', 'dark', 'system'])],
-            'preferred_funding_provider' => ['nullable', Rule::in(['paystack', 'kora'])],
+            'preferred_funding_provider' => ['nullable', Rule::in(['paystack', 'kora', 'squad'])],
             'service_discount_rate' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'roles' => ['nullable', 'array'],
             'roles.*' => ['string', Rule::exists('roles', 'name')],

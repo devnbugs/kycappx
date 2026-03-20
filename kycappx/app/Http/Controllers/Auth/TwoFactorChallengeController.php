@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
-use App\Services\Security\TurnstileService;
 use App\Services\Security\TwoFactorService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -22,14 +21,8 @@ class TwoFactorChallengeController extends Controller
         return view('auth.two-factor-challenge');
     }
 
-    public function store(
-        Request $request,
-        TwoFactorService $twoFactorService,
-        TurnstileService $turnstile
-    ): RedirectResponse
+    public function store(Request $request, TwoFactorService $twoFactorService): RedirectResponse
     {
-        $turnstile->ensureValidRequest($request, 'two_factor');
-
         $validated = $request->validate([
             'code' => ['required', 'string', 'max:32'],
         ]);

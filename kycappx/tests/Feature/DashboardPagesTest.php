@@ -19,6 +19,7 @@ class DashboardPagesTest extends TestCase
         $this->actingAs($user)->get('/transactions')->assertOk();
         $this->actingAs($user)->get('/verifications')->assertOk();
         $this->actingAs($user)->get('/verifications/new')->assertOk();
+        $this->actingAs($user)->get('/sms')->assertOk();
         $this->actingAs($user)->get('/api-keys')->assertOk();
         $this->actingAs($user)->get('/profile')->assertOk();
     }

@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Models\VerificationService;
 use App\Services\Billing\WalletService;
 use App\Services\Kyc\KycStrengthService;
-use App\Services\Security\TurnstileService;
 use App\Services\SiteSettings;
 use App\Services\Verification\VerificationOrchestrator;
 use Illuminate\Contracts\View\View;
@@ -22,7 +21,6 @@ class VerificationController extends Controller
         private SiteSettings $siteSettings,
         private VerificationOrchestrator $verificationOrchestrator,
         private KycStrengthService $kycStrength,
-        private TurnstileService $turnstile,
     ) {
     }
 
@@ -65,7 +63,6 @@ class VerificationController extends Controller
     public function store(Request $request): RedirectResponse
     {
         abort_unless($this->siteSettings->current()->verification_enabled, 403, 'Verification requests are currently disabled.');
-        $this->turnstile->ensureValidRequest($request, 'verification_request');
 
         $service = VerificationService::query()
             ->active()
@@ -106,7 +103,7 @@ class VerificationController extends Controller
         $message = match ($verificationRequest->status) {
             'success' => 'Verification completed successfully.',
             'failed' => 'The provider could not verify this request.',
-            default => 'Verification submitted and moved into review.',
+            default => 'Verification submitted and is still processing.',
         };
 
         return redirect()
@@ -250,6 +247,7 @@ class VerificationController extends Controller
             ],
             'US_SSN' => [
                 'ssn' => $validated['identifier'],
+                'tin' => $validated['identifier'],
                 'first_name' => $validated['first_name'] ?? null,
                 'middle_name' => $validated['middle_name'] ?? null,
                 'last_name' => $validated['last_name'] ?? null,

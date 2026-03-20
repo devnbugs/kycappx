@@ -22,24 +22,24 @@
                         </div>
 
                         <div class="mt-14 max-w-xl">
-                            <p class="section-kicker !text-teal-100">Responsive Workspace</p>
+                            <p class="section-kicker !text-teal-100">OneTera ID</p>
                             <h1 class="mt-4 text-4xl font-semibold leading-tight text-balance xl:text-5xl">
-                                {{ $siteSettings->site_tagline ?? 'Verification, wallet funding, and API control in one workspace.' }}
+                                {{ $siteSettings->site_tagline ?? "We're Best at it." }}
                             </h1>
                             <p class="mt-5 max-w-lg text-sm leading-7 text-white/80 sm:text-base">
-                                A production-ready front office for customers and an operations-grade admin cockpit, tuned for phone, tablet, and desktop screens.
+                                Watch behind it. Verify it.
                             </p>
                         </div>
                     </div>
 
                     <div class="relative grid gap-4 sm:grid-cols-2">
                         <div class="rounded-[1.5rem] border border-white/12 bg-white/10 p-5 backdrop-blur">
-                            <div class="text-sm text-white/65">Customer tools</div>
-                            <div class="mt-3 text-2xl font-semibold text-white">Wallets, account cards, and service runs</div>
+                            <div class="text-sm text-white/65">User Tools</div>
+                            <div class="mt-3 text-2xl font-semibold text-white">Get to Know Your Clients</div>
                         </div>
                         <div class="rounded-[1.5rem] border border-white/12 bg-white/10 p-5 backdrop-blur">
-                            <div class="text-sm text-white/65">Admin control</div>
-                            <div class="mt-3 text-2xl font-semibold text-white">User roles, pricing, DVA flows, and provider health</div>
+                            <div class="text-sm text-white/65">Staffs Survey and  Maintainance</div>
+                            <div class="mt-3 text-2xl font-semibold text-white">Our Services are Stables</div>
                         </div>
                     </div>
                 </div>

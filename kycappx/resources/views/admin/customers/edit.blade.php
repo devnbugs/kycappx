@@ -90,7 +90,7 @@
                     <div>
                         <x-input-label for="preferred_funding_provider" value="Preferred Funding Provider" />
                         <select id="preferred_funding_provider" name="preferred_funding_provider" class="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100">
-                            @foreach (['paystack' => 'Paystack', 'kora' => 'Kora'] as $value => $label)
+                            @foreach (['paystack' => 'Paystack', 'kora' => 'Kora', 'squad' => 'Squad'] as $value => $label)
                                 <option value="{{ $value }}" @selected(old('preferred_funding_provider', $customer->preferred_funding_provider) === $value)>{{ $label }}</option>
                             @endforeach
                         </select>

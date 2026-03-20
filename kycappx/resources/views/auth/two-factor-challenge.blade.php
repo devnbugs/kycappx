@@ -17,8 +17,6 @@
                 <flux:error name="code" />
             </flux:field>
 
-            <x-security.turnstile action="two_factor" />
-
             <div class="flex flex-wrap items-center gap-3">
                 <flux:button type="submit" variant="primary" color="teal">Verify and continue</flux:button>
             </div>

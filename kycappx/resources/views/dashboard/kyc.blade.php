@@ -13,7 +13,7 @@
 
                 <h2 class="mt-5 max-w-3xl text-3xl font-semibold text-balance">Build a stronger KYC posture with one profile that feeds the rest of the workspace.</h2>
                 <p class="mt-3 max-w-2xl text-sm leading-6 text-slate-200/80">
-                    Add your NIN, BVN, phone number, and full bio details once. We use this profile to measure KYC strength levels and prefill the verification flows that matter most.
+                    Add your NIN, BVN, phone number, gender, and full bio details once. We use this profile to measure KYC strength levels, prefill verification flows, and satisfy Squad virtual-account requirements.
                 </p>
 
                 <div class="mt-8 grid gap-4 sm:grid-cols-3">
@@ -112,6 +112,17 @@
                 <x-input-label for="dob" value="Date of Birth" />
                 <x-text-input id="dob" name="dob" type="date" class="mt-2" :value="old('dob', $profile['dob'])" />
                 <x-input-error :messages="$errors->get('dob')" class="mt-2" />
+            </div>
+
+            <div>
+                <x-input-label for="gender" value="Gender" />
+                <select id="gender" name="gender" class="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100">
+                    <option value="">Select gender</option>
+                    @foreach (['male' => 'Male', 'female' => 'Female'] as $value => $label)
+                        <option value="{{ $value }}" @selected(old('gender', $profile['gender']) === $value || old('gender', $profile['gender']) === ($value === 'male' ? '1' : '2'))>{{ $label }}</option>
+                    @endforeach
+                </select>
+                <x-input-error :messages="$errors->get('gender')" class="mt-2" />
             </div>
 
             <div>
