@@ -2,10 +2,10 @@
     <section class="surface-card p-6 sm:p-8">
         <div class="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
             <div>
-                <p class="section-kicker">Verification Queue</p>
+                <p class="section-kicker">Verification History</p>
                 <h2 class="mt-3 text-2xl font-semibold text-slate-950 dark:text-slate-50">Track every KYC and KYB request</h2>
                 <p class="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                    Your current available balance is <span class="font-semibold text-slate-950 dark:text-slate-50">NGN {{ number_format((float) $wallet->balance, 2) }}</span>. Successful automated checks bill against this wallet with a unique reference.
+                    Your current available balance is <span class="font-semibold text-slate-950 dark:text-slate-50">NGN {{ number_format((float) $wallet->balance, 2) }}</span>. Successful automated checks bill against this wallet with a unique reference after the provider responds in the same request.
                 </p>
             </div>
 
@@ -18,6 +18,13 @@
             @endif
         </div>
     </section>
+
+    <x-dashboard.verification-launchpad
+        :services="$workspaceServices"
+        title="Start Another Verification"
+        copy="Open a featured check from here or head into the full catalog for the rest of the Prembly stack."
+        button-label="Full Catalog"
+    />
 
     <section class="table-shell">
         <div class="overflow-x-auto">

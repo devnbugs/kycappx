@@ -57,11 +57,14 @@ class ProviderManagementController extends Controller
         return view('admin.providers.index', [
             'providerHealth' => $providerHealth,
             'providerConfigs' => ProviderConfig::query()->orderBy('priority')->get(),
+            'canManageProviders' => auth()->user()?->can('admin.providers.manage') ?? false,
         ]);
     }
 
     public function update(Request $request, ProviderConfig $providerConfig): RedirectResponse
     {
+        abort_unless($request->user()?->can('admin.providers.manage'), 403);
+
         $catalog = config("services.{$providerConfig->provider}.products", []);
 
         $validated = $request->validate([

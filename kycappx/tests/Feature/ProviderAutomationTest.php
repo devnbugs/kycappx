@@ -27,10 +27,10 @@ class ProviderAutomationTest extends TestCase
         ]);
 
         Http::fake([
-            'https://api.prembly.com/verification/bvn' => Http::response([
+            'https://api.prembly.com/verification/bvn_validation' => Http::response([
                 'status' => true,
                 'detail' => 'Verification successful',
-                'verification' => ['reference' => 'prembly-ref-123'],
+                'verification' => ['status' => 'VERIFIED', 'reference' => 'prembly-ref-123'],
                 'data' => [
                     'firstName' => 'Ada',
                     'lastName' => 'Okafor',
@@ -66,19 +66,19 @@ class ProviderAutomationTest extends TestCase
         ]);
 
         $service = VerificationService::create([
-            'code' => 'BVN',
-            'name' => 'Bank Verification Number',
+            'code' => 'BVN_BASIC',
+            'name' => 'BVN Basic',
             'type' => 'kyc',
             'country' => 'NG',
             'is_active' => true,
             'default_price' => 150,
             'default_cost' => 95,
-            'required_fields' => ['bvn'],
+            'required_fields' => ['number'],
         ]);
 
         $response = $this->actingAs($user)->post('/verifications', [
             'service_id' => $service->id,
-            'identifier' => '22123456789',
+            'number' => '22123456789',
         ]);
 
         $response->assertRedirect('/verifications');
@@ -86,6 +86,8 @@ class ProviderAutomationTest extends TestCase
         $verification = VerificationRequest::query()->firstOrFail();
         $this->assertSame('success', $verification->status);
         $this->assertSame('prembly', $verification->provider_used);
+        $this->assertSame('VERIFIED', data_get($verification->normalized_response, 'provider_status'));
+        $this->assertSame('Verification successful', data_get($verification->normalized_response, 'provider_message'));
         $this->assertSame('850.00', $user->wallet->fresh()->balance);
 
         $sms = SmsDispatch::query()->firstOrFail();
@@ -93,7 +95,7 @@ class ProviderAutomationTest extends TestCase
         $this->assertSame('batch_123', $sms->remote_reference);
     }
 
-    public function test_verification_submission_is_queued_before_processing(): void
+    public function test_verification_submission_is_processed_immediately_without_queueing(): void
     {
         Queue::fake();
 
@@ -102,7 +104,24 @@ class ProviderAutomationTest extends TestCase
             'services.prembly.secret_key' => 'prembly-secret',
         ]);
 
-        $user = User::factory()->create();
+        Http::fake([
+            'https://api.prembly.com/verification/bvn_validation' => Http::response([
+                'status' => true,
+                'detail' => 'Verification successful',
+                'response_code' => '00',
+                'verification' => ['status' => 'VERIFIED', 'reference' => 'prembly-ref-sync-123'],
+                'data' => [
+                    'firstName' => 'Ada',
+                    'lastName' => 'Okafor',
+                    'bvn' => '22123456789',
+                ],
+            ], 200),
+        ]);
+
+        $user = User::factory()->create([
+            'phone' => null,
+            'settings' => ['security_alerts' => false],
+        ]);
         $user->wallet()->create([
             'currency' => 'NGN',
             'balance' => 1000,
@@ -110,28 +129,28 @@ class ProviderAutomationTest extends TestCase
         ]);
 
         $service = VerificationService::create([
-            'code' => 'BVN',
-            'name' => 'Bank Verification Number',
+            'code' => 'BVN_BASIC',
+            'name' => 'BVN Basic',
             'type' => 'kyc',
             'country' => 'NG',
             'is_active' => true,
             'default_price' => 150,
             'default_cost' => 95,
-            'required_fields' => ['bvn'],
+            'required_fields' => ['number'],
         ]);
 
         $response = $this->actingAs($user)->post('/verifications', [
             'service_id' => $service->id,
-            'identifier' => '22123456789',
+            'number' => '22123456789',
         ]);
 
         $response->assertRedirect('/verifications');
-        Queue::assertPushed(ProcessVerificationRequestJob::class, 1);
+        Queue::assertNotPushed(ProcessVerificationRequestJob::class);
 
         $verification = VerificationRequest::query()->firstOrFail();
-        $this->assertSame('pending', $verification->status);
-        $this->assertNull($verification->provider_used);
-        $this->assertSame('1000.00', $user->wallet->fresh()->balance);
+        $this->assertSame('success', $verification->status);
+        $this->assertSame('prembly', $verification->provider_used);
+        $this->assertSame('850.00', $user->wallet->fresh()->balance);
         $this->assertDatabaseCount('sms_dispatches', 0);
     }
 
@@ -143,7 +162,7 @@ class ProviderAutomationTest extends TestCase
         ]);
 
         Http::fake([
-            'https://api.prembly.com/identitypass/verification/bank_account/comparism' => Http::response([
+            'https://api.prembly.com/verification/bank_account/comparism' => Http::response([
                 'status' => true,
                 'detail' => 'Verification successful',
                 'response_code' => '00',
@@ -173,21 +192,21 @@ class ProviderAutomationTest extends TestCase
         ]);
 
         $service = VerificationService::create([
-            'code' => 'ACCOUNT_NAME_MATCH',
-            'name' => 'Bank Account Name Match',
-            'type' => 'kyc',
+            'code' => 'ACCOUNT_WITH_NAME_COMPARISM',
+            'name' => 'Account with Name Comparism',
+            'type' => 'bank',
             'country' => 'NG',
             'is_active' => true,
             'default_price' => 100,
             'default_cost' => 70,
-            'required_fields' => ['account_number', 'bank_code', 'account_name'],
+            'required_fields' => ['number', 'bank_code', 'customer'],
         ]);
 
         $response = $this->actingAs($user)->post('/verifications', [
             'service_id' => $service->id,
-            'account_number' => '1010101010',
+            'number' => '1010101010',
             'bank_code' => '214',
-            'account_name' => 'John Doe',
+            'customer' => 'John Doe',
         ]);
 
         $response->assertRedirect('/verifications');

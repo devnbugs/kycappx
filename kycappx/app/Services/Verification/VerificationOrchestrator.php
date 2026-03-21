@@ -3,7 +3,6 @@
 namespace App\Services\Verification;
 
 use App\Contracts\VerificationProviderInterface;
-use App\Jobs\ProcessVerificationRequestJob;
 use App\Models\ProviderConfig;
 use App\Models\User;
 use App\Models\VerificationAttempt;
@@ -25,6 +24,7 @@ class VerificationOrchestrator
         private SiteSettings $siteSettings,
         private ProviderFeatureService $providerFeatures,
         private SquadSmsService $smsService,
+        private VerificationCatalogService $verificationCatalog,
     ) {
     }
 
@@ -45,9 +45,9 @@ class VerificationOrchestrator
             'request_payload' => $payload,
         ]);
 
-        ProcessVerificationRequestJob::dispatch($verificationRequest->id);
+        $processedRequest = $this->process($verificationRequest);
 
-        return $verificationRequest->forceFill([
+        return $processedRequest->forceFill([
             'request_payload' => $maskedPayload,
         ])->fresh(['service']);
     }
@@ -188,17 +188,14 @@ class VerificationOrchestrator
         VerificationService $service,
         array $payload
     ) {
-        return match (strtoupper($service->code)) {
-            'BVN' => $provider->verifyBvn($payload),
-            'NIN' => $provider->verifyNin($payload),
-            'PHONE', 'US_PHONE' => $provider->verifyPhone($payload),
-            'CAC' => $provider->verifyCac($payload),
-            'ACCOUNT_NAME_MATCH' => $provider->verifyBankAccountComparison($payload),
-            'US_BIODATA' => $provider->verifyUsBiodata($payload),
-            'US_ADDRESS' => $provider->verifyUsAddress($payload),
-            'US_SSN' => $provider->verifyUsSsn($payload),
-            default => throw new RuntimeException('This verification service is not supported yet.'),
-        };
+        $definition = $this->verificationCatalog->definitionFor($service);
+        $productKey = $this->productKeyForService($service);
+
+        if (! $definition || ! $productKey) {
+            throw new RuntimeException('This verification service is not supported yet.');
+        }
+
+        return $provider->verifyCatalogProduct($productKey, $payload, $definition);
     }
 
     private function resolveProvider(VerificationService $service): ?VerificationProviderInterface
@@ -237,17 +234,7 @@ class VerificationOrchestrator
 
     private function productKeyForService(VerificationService $service): ?string
     {
-        return match (strtoupper($service->code)) {
-            'BVN' => 'bvn',
-            'NIN' => 'nin',
-            'PHONE', 'US_PHONE' => 'phone',
-            'CAC' => 'cac',
-            'ACCOUNT_NAME_MATCH' => 'account_name_match',
-            'US_BIODATA' => 'us_biodata',
-            'US_ADDRESS' => 'us_address',
-            'US_SSN' => 'us_ssn',
-            default => null,
-        };
+        return data_get($this->verificationCatalog->definitionFor($service), 'product_key');
     }
 
     private function maskSensitivePayload(array $payload): array

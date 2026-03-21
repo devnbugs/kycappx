@@ -90,98 +90,98 @@
         </div>
 
         <div class="mt-8 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-            <div>
-                <x-input-label for="first_name" value="First Name" />
-                <x-text-input id="first_name" name="first_name" type="text" class="mt-2" :value="old('first_name', $profile['first_name'])" />
-                <x-input-error :messages="$errors->get('first_name')" class="mt-2" />
-            </div>
+            <flux:field>
+                <flux:label>First Name</flux:label>
+                <flux:input id="first_name" name="first_name" type="text" :value="old('first_name', $profile['first_name'])" />
+                <flux:error name="first_name" />
+            </flux:field>
 
-            <div>
-                <x-input-label for="middle_name" value="Middle Name" />
-                <x-text-input id="middle_name" name="middle_name" type="text" class="mt-2" :value="old('middle_name', $profile['middle_name'])" />
-                <x-input-error :messages="$errors->get('middle_name')" class="mt-2" />
-            </div>
+            <flux:field>
+                <flux:label>Middle Name</flux:label>
+                <flux:input id="middle_name" name="middle_name" type="text" :value="old('middle_name', $profile['middle_name'])" />
+                <flux:error name="middle_name" />
+            </flux:field>
 
-            <div>
-                <x-input-label for="last_name" value="Last Name" />
-                <x-text-input id="last_name" name="last_name" type="text" class="mt-2" :value="old('last_name', $profile['last_name'])" />
-                <x-input-error :messages="$errors->get('last_name')" class="mt-2" />
-            </div>
+            <flux:field>
+                <flux:label>Last Name</flux:label>
+                <flux:input id="last_name" name="last_name" type="text" :value="old('last_name', $profile['last_name'])" />
+                <flux:error name="last_name" />
+            </flux:field>
 
-            <div>
-                <x-input-label for="dob" value="Date of Birth" />
-                <x-text-input id="dob" name="dob" type="date" class="mt-2" :value="old('dob', $profile['dob'])" />
-                <x-input-error :messages="$errors->get('dob')" class="mt-2" />
-            </div>
+            <flux:field>
+                <flux:label>Date of Birth</flux:label>
+                <flux:input id="dob" name="dob" type="date" :value="old('dob', $profile['dob'])" />
+                <flux:error name="dob" />
+            </flux:field>
 
-            <div>
-                <x-input-label for="gender" value="Gender" />
-                <select id="gender" name="gender" class="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100">
+            <flux:field>
+                <flux:label>Gender</flux:label>
+                <flux:select id="gender" name="gender">
                     <option value="">Select gender</option>
                     @foreach (['male' => 'Male', 'female' => 'Female'] as $value => $label)
                         <option value="{{ $value }}" @selected(old('gender', $profile['gender']) === $value || old('gender', $profile['gender']) === ($value === 'male' ? '1' : '2'))>{{ $label }}</option>
                     @endforeach
-                </select>
-                <x-input-error :messages="$errors->get('gender')" class="mt-2" />
-            </div>
+                </flux:select>
+                <flux:error name="gender" />
+            </flux:field>
 
-            <div>
-                <x-input-label for="phone" value="Phone Number" />
-                <x-text-input id="phone" name="phone" type="text" class="mt-2" :value="old('phone', $profile['phone'])" placeholder="+2348030000000" />
-                <x-input-error :messages="$errors->get('phone')" class="mt-2" />
-            </div>
+            <flux:field>
+                <flux:label>Phone Number</flux:label>
+                <flux:input id="phone" name="phone" type="text" :value="old('phone', $profile['phone'])" placeholder="+2348030000000" />
+                <flux:error name="phone" />
+            </flux:field>
 
-            <div>
-                <x-input-label for="country" value="Country" />
-                <select id="country" name="country" class="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100">
+            <flux:field>
+                <flux:label>Country</flux:label>
+                <flux:select id="country" name="country">
                     @foreach (['NG' => 'Nigeria', 'US' => 'United States'] as $value => $label)
                         <option value="{{ $value }}" @selected(old('country', $profile['country']) === $value)>{{ $label }}</option>
                     @endforeach
-                </select>
-                <x-input-error :messages="$errors->get('country')" class="mt-2" />
-            </div>
+                </flux:select>
+                <flux:error name="country" />
+            </flux:field>
 
-            <div>
-                <x-input-label for="nin" value="NIN" />
-                <x-text-input id="nin" name="nin" type="text" class="mt-2" :value="old('nin', $profile['nin'])" placeholder="12345678901" />
-                <x-input-error :messages="$errors->get('nin')" class="mt-2" />
-            </div>
+            <flux:field>
+                <flux:label>NIN</flux:label>
+                <flux:input id="nin" name="nin" type="text" :value="old('nin', $profile['nin'])" placeholder="12345678901" />
+                <flux:error name="nin" />
+            </flux:field>
 
-            <div>
-                <x-input-label for="bvn" value="BVN" />
-                <x-text-input id="bvn" name="bvn" type="text" class="mt-2" :value="old('bvn', $profile['bvn'])" placeholder="22123456789" />
-                <x-input-error :messages="$errors->get('bvn')" class="mt-2" />
-            </div>
+            <flux:field>
+                <flux:label>BVN</flux:label>
+                <flux:input id="bvn" name="bvn" type="text" :value="old('bvn', $profile['bvn'])" placeholder="22123456789" />
+                <flux:error name="bvn" />
+            </flux:field>
 
-            <div class="md:col-span-2 xl:col-span-1">
-                <x-input-label for="address_line1" value="Address Line 1" />
-                <x-text-input id="address_line1" name="address_line1" type="text" class="mt-2" :value="old('address_line1', $profile['address_line1'])" />
-                <x-input-error :messages="$errors->get('address_line1')" class="mt-2" />
-            </div>
+            <flux:field class="md:col-span-2 xl:col-span-1">
+                <flux:label>Address Line 1</flux:label>
+                <flux:input id="address_line1" name="address_line1" type="text" :value="old('address_line1', $profile['address_line1'])" />
+                <flux:error name="address_line1" />
+            </flux:field>
 
-            <div>
-                <x-input-label for="address_line2" value="Address Line 2" />
-                <x-text-input id="address_line2" name="address_line2" type="text" class="mt-2" :value="old('address_line2', $profile['address_line2'])" />
-                <x-input-error :messages="$errors->get('address_line2')" class="mt-2" />
-            </div>
+            <flux:field>
+                <flux:label>Address Line 2</flux:label>
+                <flux:input id="address_line2" name="address_line2" type="text" :value="old('address_line2', $profile['address_line2'])" />
+                <flux:error name="address_line2" />
+            </flux:field>
 
-            <div>
-                <x-input-label for="city" value="City" />
-                <x-text-input id="city" name="city" type="text" class="mt-2" :value="old('city', $profile['city'])" />
-                <x-input-error :messages="$errors->get('city')" class="mt-2" />
-            </div>
+            <flux:field>
+                <flux:label>City</flux:label>
+                <flux:input id="city" name="city" type="text" :value="old('city', $profile['city'])" />
+                <flux:error name="city" />
+            </flux:field>
 
-            <div>
-                <x-input-label for="state" value="State / Region" />
-                <x-text-input id="state" name="state" type="text" class="mt-2" :value="old('state', $profile['state'])" />
-                <x-input-error :messages="$errors->get('state')" class="mt-2" />
-            </div>
+            <flux:field>
+                <flux:label>State / Region</flux:label>
+                <flux:input id="state" name="state" type="text" :value="old('state', $profile['state'])" />
+                <flux:error name="state" />
+            </flux:field>
 
-            <div>
-                <x-input-label for="zip" value="ZIP / Postal Code" />
-                <x-text-input id="zip" name="zip" type="text" class="mt-2" :value="old('zip', $profile['zip'])" />
-                <x-input-error :messages="$errors->get('zip')" class="mt-2" />
-            </div>
+            <flux:field>
+                <flux:label>ZIP / Postal Code</flux:label>
+                <flux:input id="zip" name="zip" type="text" :value="old('zip', $profile['zip'])" />
+                <flux:error name="zip" />
+            </flux:field>
         </div>
 
         <div class="mt-8 flex flex-wrap gap-3">

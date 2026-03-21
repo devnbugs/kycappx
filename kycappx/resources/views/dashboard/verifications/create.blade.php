@@ -1,5 +1,5 @@
 <x-layouts.dashboard-user title="New Verification" header="Create Verification">
-    <section class="grid gap-4 xl:grid-cols-[0.95fr,1.05fr]">
+    <section x-data="{ search: '' }" class="grid gap-4 xl:grid-cols-[0.95fr,1.05fr]">
         <div class="surface-card p-6 sm:p-8">
                 <div class="flex items-center justify-between gap-3">
                     <div>
@@ -9,10 +9,16 @@
                     <div class="badge-soft">Wallet: NGN {{ number_format((float) $wallet->balance, 2) }}</div>
                 </div>
 
+            <div class="mt-5">
+                <x-input-label for="service-search" value="Search Services" />
+                <x-text-input id="service-search" type="text" class="mt-2" x-model="search" placeholder="Search by name or code" />
+            </div>
+
             <div class="mt-6 space-y-3">
                 @forelse ($services as $service)
                     <a
                         href="{{ route('verifications.create', ['service' => $service->id]) }}"
+                        x-show="@js(strtolower($service->name.' '.$service->code)).includes(search.toLowerCase())"
                         @class([
                             'block rounded-[1.5rem] border p-5 transition',
                             'border-slate-950 bg-slate-950 text-white shadow-lg' => optional($selectedService)->id === $service->id,
@@ -65,42 +71,40 @@
                 <div class="mt-5 rounded-[1.25rem] border border-slate-200/80 bg-slate-50/80 px-4 py-4 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-300">
                     Saved your KYC bio already?
                     <a href="{{ route('kyc.edit') }}" class="font-semibold text-slate-950 underline underline-offset-4 dark:text-slate-50">Open the KYC page</a>
-                    to keep NIN, BVN, phone, and address details ready for auto-prefill.
+                    to keep NIN, BVN, phone, and address details ready for auto-prefill. Verification submits directly to the provider API from this form and returns the outcome immediately.
                 </div>
 
                 <form method="POST" action="{{ route('verifications.store') }}" class="mt-6 space-y-5">
                     @csrf
                     <input type="hidden" name="service_id" value="{{ $selectedService->id }}">
 
-                    @foreach ($fieldBlueprints as $field)
-                        <div>
-                            <x-input-label :for="$field['name']" :value="$field['label']" />
+                    <div class="grid gap-5 md:grid-cols-2">
+                        @foreach ($fieldBlueprints as $field)
+                            <flux:field @class(['md:col-span-2' => in_array($field['name'], ['company_name', 'payload_json'], true)])>
+                                <flux:label>{{ $field['label'] }}</flux:label>
+                                @if ($field['type'] === 'textarea')
+                                    <flux:textarea :id="$field['name']" :name="$field['name']" rows="7">{{ old($field['name'], data_get($fieldDefaults, $field['name'])) }}</flux:textarea>
+                                @else
+                                    <flux:input
+                                        :id="$field['name']"
+                                        :name="$field['name']"
+                                        :type="$field['type']"
+                                        :value="old($field['name'], data_get($fieldDefaults, $field['name']))"
+                                        :placeholder="$field['placeholder'] ?: null"
+                                    />
+                                @endif
+                                <flux:error :name="$field['name']" />
+                                <flux:description>
+                                    {{ $field['helper'] }}
+                                    @if ($field['required'])
+                                        <span class="font-semibold text-slate-950 dark:text-slate-50">Required</span>
+                                    @endif
+                                </flux:description>
+                            </flux:field>
+                        @endforeach
+                    </div>
 
-                            @if ($field['type'] === 'date')
-                                <x-text-input
-                                    :id="$field['name']"
-                                    :name="$field['name']"
-                                    type="date"
-                                    class="mt-2"
-                                    :value="old($field['name'], data_get($fieldDefaults, $field['name']))"
-                                />
-                            @else
-                                <x-text-input
-                                    :id="$field['name']"
-                                    :name="$field['name']"
-                                    :type="$field['type']"
-                                    class="mt-2"
-                                    :value="old($field['name'], data_get($fieldDefaults, $field['name']))"
-                                    :placeholder="$field['placeholder']"
-                                />
-                            @endif
-
-                            <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">{{ $field['helper'] }}</p>
-                            <x-input-error :messages="$errors->get($field['name'])" class="mt-2" />
-                        </div>
-                    @endforeach
-
-                    <x-input-error :messages="$errors->get('service_id')" class="mt-2" />
+                    <flux:error name="service_id" />
 
                     <div class="flex flex-wrap gap-3 pt-2">
                         <x-ui.button type="submit">Submit Verification</x-ui.button>

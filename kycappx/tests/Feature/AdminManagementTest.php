@@ -4,7 +4,10 @@ namespace Tests\Feature;
 
 use App\Models\SiteSetting;
 use App\Models\User;
+use App\Models\ProviderConfig;
+use App\Models\VerificationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
@@ -112,5 +115,94 @@ class AdminManagementTest extends TestCase
         $this->assertSame('Kycappx Pro', $settings->site_name);
         $this->assertSame('dark', $settings->default_theme);
         $this->assertFalse($settings->wallet_funding_enabled);
+    }
+
+    public function test_admin_with_permission_can_toggle_verification_services_and_support_cannot(): void
+    {
+        $permission = Permission::findOrCreate('admin.services.manage');
+        $adminRole = Role::findOrCreate('admin');
+        $supportRole = Role::findOrCreate('support');
+        $adminRole->givePermissionTo($permission);
+
+        $admin = User::factory()->create();
+        $admin->assignRole($adminRole);
+
+        $support = User::factory()->create();
+        $support->assignRole($supportRole);
+
+        $service = VerificationService::create([
+            'code' => 'BVN_BASIC',
+            'name' => 'BVN Basic',
+            'type' => 'kyc',
+            'country' => 'NG',
+            'is_active' => true,
+            'default_price' => 150,
+            'default_cost' => 95,
+            'required_fields' => ['number'],
+        ]);
+
+        $this->actingAs($support)->put('/admin/services/'.$service->id, [
+            'name' => 'BVN Basic',
+            'type' => 'kyc',
+            'country' => 'NG',
+            'default_price' => 150,
+            'default_cost' => 95,
+            'required_fields' => 'number',
+            'is_active' => '0',
+        ])->assertForbidden();
+
+        $this->actingAs($admin)->put('/admin/services/'.$service->id, [
+            'name' => 'BVN Basic',
+            'type' => 'kyc',
+            'country' => 'NG',
+            'default_price' => 150,
+            'default_cost' => 95,
+            'required_fields' => 'number',
+            'is_active' => '0',
+        ])->assertRedirect('/admin/services');
+
+        $this->assertFalse($service->fresh()->is_active);
+    }
+
+    public function test_admin_with_permission_can_toggle_provider_products(): void
+    {
+        $permission = Permission::findOrCreate('admin.providers.manage');
+        $adminRole = Role::findOrCreate('admin');
+        $adminRole->givePermissionTo($permission);
+
+        $admin = User::factory()->create();
+        $admin->assignRole($adminRole);
+
+        $provider = ProviderConfig::create([
+            'provider' => 'prembly',
+            'is_active' => true,
+            'priority' => 1,
+            'config' => [
+                'channel' => 'identity',
+                'mode' => 'live',
+                'timeout_seconds' => 30,
+                'default_product' => 'bvn_basic',
+                'enabled_products' => [
+                    'bvn_basic' => true,
+                    'nin_basic' => true,
+                ],
+            ],
+        ]);
+
+        $response = $this->actingAs($admin)->put('/admin/providers/'.$provider->id, [
+            'priority' => 1,
+            'channel' => 'identity',
+            'mode' => 'live',
+            'timeout_seconds' => 30,
+            'default_product' => 'bvn_basic',
+            'is_active' => '1',
+            'enabled_products' => [
+                'bvn_basic' => '1',
+                'nin_basic' => '0',
+            ],
+        ]);
+
+        $response->assertRedirect('/admin/providers');
+        $this->assertFalse((bool) data_get($provider->fresh()->config, 'enabled_products.nin_basic'));
     }
 }

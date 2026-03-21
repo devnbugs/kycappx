@@ -19,11 +19,14 @@ class VerificationServiceController extends Controller
                 ->orderByDesc('is_active')
                 ->orderBy('name')
                 ->get(),
+            'canManageServices' => auth()->user()?->can('admin.services.manage') ?? false,
         ]);
     }
 
     public function update(Request $request, VerificationService $verificationService): RedirectResponse
     {
+        abort_unless($request->user()?->can('admin.services.manage'), 403);
+
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'type' => ['required', 'string', 'max:50'],

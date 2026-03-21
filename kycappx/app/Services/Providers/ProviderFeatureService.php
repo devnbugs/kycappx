@@ -3,6 +3,8 @@
 namespace App\Services\Providers;
 
 use App\Models\ProviderConfig;
+use Illuminate\Support\Facades\Schema;
+use Throwable;
 
 class ProviderFeatureService
 {
@@ -13,9 +15,17 @@ class ProviderFeatureService
         $provider = strtolower($provider);
 
         if (! array_key_exists($provider, $this->records)) {
-            $this->records[$provider] = ProviderConfig::query()
-                ->where('provider', $provider)
-                ->first();
+            try {
+                if (! Schema::hasTable('provider_configs')) {
+                    $this->records[$provider] = null;
+                } else {
+                    $this->records[$provider] = ProviderConfig::query()
+                        ->where('provider', $provider)
+                        ->first();
+                }
+            } catch (Throwable) {
+                $this->records[$provider] = null;
+            }
         }
 
         return $this->records[$provider];

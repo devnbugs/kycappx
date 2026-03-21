@@ -130,40 +130,12 @@
     </section-->
 
     <section class="grid gap-4 lg:grid-cols-[0.9fr,1.1fr]">
-        <div class="surface-card p-6">
-            <div class="flex items-center justify-between gap-3">
-                <div>
-                    <p class="section-kicker">Service Catalog</p>
-                    <h3 class="mt-3 text-2xl font-semibold text-slate-950 dark:text-slate-50">Active verification services</h3>
-                </div>
-                <a href="{{ route('verifications.create') }}">
-                    <x-ui.button variant="secondary">New Request</x-ui.button>
-                </a>
-            </div>
-
-            <div class="mt-6 space-y-3">
-                @forelse ($activeServices as $service)
-                    <div class="rounded-[1.5rem] border border-slate-200/80 bg-white/80 p-4 dark:border-slate-700 dark:bg-slate-900/70">
-                        <div class="flex items-start justify-between gap-4">
-                            <div>
-                                <div class="text-lg font-semibold text-slate-950 dark:text-slate-50">{{ $service->name }}</div>
-                                <div class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{ $service->code }} · {{ strtoupper($service->country) }}</div>
-                            </div>
-                            <x-ui.status-badge :value="$service->is_active ? 'Active' : 'Inactive'" :tone="$service->is_active ? 'success' : 'warning'" />
-                        </div>
-                        <div class="mt-4 flex flex-wrap gap-2 text-xs text-slate-600">
-                            <span class="badge-soft">Sell price: NGN {{ number_format((float) $service->default_price, 2) }}</span>
-                            <span class="badge-soft">Cost: NGN {{ number_format((float) $service->default_cost, 2) }}</span>
-                            <span class="badge-soft">{{ count($service->required_fields ?? []) }} input fields</span>
-                        </div>
-                    </div>
-                @empty
-                    <div class="rounded-[1.5rem] border border-dashed border-slate-300 bg-slate-50 px-5 py-8 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900/50 dark:text-slate-300">
-                        No verification services have been activated yet.
-                    </div>
-                @endforelse
-            </div>
-        </div>
+        <x-dashboard.verification-launchpad
+            :services="$activeServices"
+            title="Launch Verification Fast"
+            copy="Run the most-used Prembly checks without hunting through the catalog first."
+            button-label="Browse All Services"
+        />
 
         <div class="table-shell">
             <div class="flex items-center justify-between gap-3 px-6 py-5">

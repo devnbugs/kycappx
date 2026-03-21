@@ -13,6 +13,7 @@ use App\Services\Billing\WalletService;
 use App\Services\Kyc\KycStrengthService;
 use App\Services\Providers\ProviderFeatureService;
 use App\Services\SiteSettings;
+use App\Services\Verification\VerificationCatalogService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
 
@@ -24,6 +25,7 @@ class DashboardController extends Controller
         private KycStrengthService $kycStrength,
         private ProviderFeatureService $providerFeatures,
         private SiteSettings $siteSettings,
+        private VerificationCatalogService $verificationCatalog,
     ) {
     }
 
@@ -59,11 +61,18 @@ class DashboardController extends Controller
                 ->latest()
                 ->limit(5)
                 ->get(),
-            'activeServices' => VerificationService::query()
-                ->active()
-                ->orderBy('name')
-                ->limit(6)
-                ->get(),
+            'activeServices' => $this->verificationCatalog
+                ->filterLaunchable(VerificationService::query()
+                    ->active()
+                    ->orderBy('name')
+                    ->get())
+                ->sortBy(fn (VerificationService $service) => sprintf(
+                    '%s-%s',
+                    data_get($this->verificationCatalog->definitionFor($service), 'service.featured', false) ? '0' : '1',
+                    $service->name
+                ))
+                ->take(6)
+                ->values(),
             'virtualAccounts' => DedicatedVirtualAccount::query()
                 ->where('user_id', $user->id)
                 ->orderByDesc('is_primary')

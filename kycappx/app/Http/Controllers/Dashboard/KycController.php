@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Dashboard;
 use App\Http\Controllers\Controller;
 use App\Models\VerificationService;
 use App\Services\Kyc\KycStrengthService;
+use App\Services\Verification\VerificationCatalogService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -12,7 +13,10 @@ use Illuminate\Validation\Rule;
 
 class KycController extends Controller
 {
-    public function __construct(private KycStrengthService $kycStrength)
+    public function __construct(
+        private KycStrengthService $kycStrength,
+        private VerificationCatalogService $verificationCatalog,
+    )
     {
     }
 
@@ -24,12 +28,18 @@ class KycController extends Controller
         return view('dashboard.kyc', [
             'profile' => $snapshot['profile'],
             'snapshot' => $snapshot,
-            'recommendedServices' => VerificationService::query()
-                ->whereIn('code', ['PHONE', 'NIN', 'BVN', 'US_PHONE'])
-                ->active()
-                ->orderBy('country')
-                ->orderBy('name')
-                ->get(),
+            'recommendedServices' => $this->verificationCatalog
+                ->filterLaunchable(VerificationService::query()
+                    ->whereIn('code', [
+                        'BASIC_PHONE_NUMBER',
+                        'NIN_BASIC',
+                        'BVN_BASIC',
+                        'ADDRESS_VERIFICATION',
+                        'ACCOUNT_WITH_NAME_COMPARISM',
+                    ])
+                    ->active()
+                    ->orderBy('name')
+                    ->get()),
         ]);
     }
 

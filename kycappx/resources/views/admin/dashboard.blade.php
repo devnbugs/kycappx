@@ -9,7 +9,7 @@
         </div>
 
         <div class="metric-card">
-            <div class="text-sm text-slate-500 dark:text-slate-400">Verification Queue</div>
+            <div class="text-sm text-slate-500 dark:text-slate-400">Verification Requests</div>
             <div class="mt-3 text-3xl font-semibold text-slate-950 dark:text-slate-50">{{ number_format($metrics['verifications']) }}</div>
             <div class="mt-2 text-sm text-slate-600 dark:text-slate-300">
                 {{ number_format($metrics['pending_verifications']) }} still need provider or manual attention.
@@ -82,7 +82,7 @@
                     <div class="mt-2 text-sm text-slate-600 dark:text-slate-300">Track retries, payload references, and unprocessed delivery events.</div>
                 </a>
                 <a href="{{ route('admin.logs.verifications') }}" class="surface-card block p-5 transition hover:-translate-y-0.5">
-                    <div class="text-lg font-semibold text-slate-950 dark:text-slate-50">Verification Queue</div>
+                    <div class="text-lg font-semibold text-slate-950 dark:text-slate-50">Verification Logs</div>
                     <div class="mt-2 text-sm text-slate-600 dark:text-slate-300">Review recent verification outcomes and isolate manual-review cases fast.</div>
                 </a>
                 <a href="{{ route('admin.logs.audit') }}" class="surface-card block p-5 transition hover:-translate-y-0.5">

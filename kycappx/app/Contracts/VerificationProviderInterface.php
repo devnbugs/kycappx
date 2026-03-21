@@ -8,6 +8,7 @@ interface VerificationProviderInterface
 {
     public function providerName(): string;
 
+    public function verifyCatalogProduct(string $productKey, array $payload, array $definition = []): ProviderResult;
     public function verifyBvn(array $payload): ProviderResult;
     public function verifyNin(array $payload): ProviderResult;
     public function verifyPhone(array $payload): ProviderResult;

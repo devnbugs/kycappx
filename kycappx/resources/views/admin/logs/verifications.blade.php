@@ -1,7 +1,7 @@
 <x-layouts.dashboard-admin title="Verification Logs" header="Verification Processing Logs">
     <section class="surface-card p-6 sm:p-8">
         <p class="section-kicker">Verification Feed</p>
-        <h2 class="mt-3 text-2xl font-semibold text-slate-950 dark:text-slate-50">Provider outcomes, customer pricing, and queue status</h2>
+        <h2 class="mt-3 text-2xl font-semibold text-slate-950 dark:text-slate-50">Provider outcomes, customer pricing, and request status</h2>
         <p class="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
             Review how verification requests are moving through the system and identify requests that may need manual follow-up.
         </p>

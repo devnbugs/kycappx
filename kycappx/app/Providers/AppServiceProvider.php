@@ -4,10 +4,10 @@ namespace App\Providers;
 
 use App\Models\VerificationService;
 use App\Services\SiteSettings;
-use Illuminate\Support\Facades\Cache;
+use App\Services\Verification\VerificationCatalogService;
 use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\View;
+use Illuminate\Support\ServiceProvider;
 use Throwable;
 
 class AppServiceProvider extends ServiceProvider
@@ -23,17 +23,17 @@ class AppServiceProvider extends ServiceProvider
     /**
      * Bootstrap any application services.
      */
-    public function boot(SiteSettings $siteSettings): void
+    public function boot(SiteSettings $siteSettings, VerificationCatalogService $verificationCatalog): void
     {
         $settings = $siteSettings->current();
 
         config(['app.name' => $settings->site_name ?: config('app.name')]);
 
         View::share('siteSettings', $settings);
-        View::share('workspaceServices', $this->workspaceServices());
+        View::share('workspaceServices', $this->workspaceServices($verificationCatalog));
     }
 
-    private function workspaceServices()
+    private function workspaceServices(VerificationCatalogService $verificationCatalog)
     {
         try {
             if (! Schema::hasTable('verification_services')) {
@@ -43,16 +43,14 @@ class AppServiceProvider extends ServiceProvider
             return collect();
         }
 
-        $services = Cache::remember(
-            'workspace.services.navigation',
-            now()->addMinutes(5),
-            fn () => VerificationService::query()
-                ->orderByDesc('is_active')
-                ->orderBy('name')
-                ->get(['id', 'code', 'name', 'is_active', 'default_price'])
-        );
-
-        // Filter to ensure we only return valid objects
-        return collect($services)->filter(fn ($service) => is_object($service))->values();
+        return $verificationCatalog
+            ->filterFeatured($verificationCatalog->filterLaunchable(
+                VerificationService::query()
+                    ->active()
+                    ->orderBy('name')
+                    ->get(['id', 'code', 'name', 'type', 'is_active', 'default_price'])
+            ))
+            ->take(10)
+            ->values();
     }
 }

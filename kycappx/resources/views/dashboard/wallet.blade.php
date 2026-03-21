@@ -79,6 +79,13 @@
         </div>
     </section>
 
+    <x-dashboard.verification-launchpad
+        :services="$workspaceServices"
+        title="Verification From Wallet"
+        copy="Kick off identity and compliance checks here before wallet actions, withdrawals, or virtual-account setup."
+        button-label="Open Verification Catalog"
+    />
+
     <section class="grid gap-4 lg:grid-cols-2">
         <div class="surface-card p-6 sm:p-8">
             <div class="flex items-start justify-between">

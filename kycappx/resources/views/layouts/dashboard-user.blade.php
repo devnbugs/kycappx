@@ -70,16 +70,14 @@
                                     'opacity-60' => ! $service->is_active,
                                 ])
                             >
-                                <flux:icon :icon="match (strtoupper($service->code)) {
-                                    'BVN' => 'identification',
-                                    'NIN' => 'shield-check',
-                                    'CAC' => 'building-office',
-                                    'PHONE' => 'device-phone-mobile',
-                                    'US_PHONE' => 'device-phone-mobile',
-                                    'US_BIODATA' => 'user-circle',
-                                    'US_ADDRESS' => 'map-pin',
-                                    'US_SSN' => 'finger-print',
-                                    default => 'sparkles',
+                                <flux:icon :icon="match (strtolower($service->type ?? '')) {
+                                    'bank' => 'credit-card',
+                                    'address' => 'map-pin',
+                                    'kyb' => 'building-office',
+                                    'vehicle' => 'truck',
+                                    'education' => 'academic-cap',
+                                    'compliance' => 'document-text',
+                                    default => 'shield-check',
                                 }" variant="mini" />
                                 <span>{{ strtoupper($service->code) }}</span>
                                 @unless ($service->is_active)
@@ -154,7 +152,7 @@
                                 <flux:button variant="outline" icon="identification">KYC</flux:button>
                             </a>
                             <a href="{{ route('verifications.create') }}">
-                                <flux:button variant="outline" icon="shield-check">Run service</flux:button>
+                                <flux:button variant="outline" icon="shield-check">Run Verification</flux:button>
                             </a>
                             <a href="{{ route('sms.index') }}">
                                 <flux:button variant="outline" icon="chat-bubble-left-right">SMS</flux:button>

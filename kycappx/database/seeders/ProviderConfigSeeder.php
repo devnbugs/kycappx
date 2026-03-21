@@ -9,6 +9,11 @@ class ProviderConfigSeeder extends Seeder
 {
     public function run(): void
     {
+        $premblyProducts = collect(config('services.prembly.products', []));
+        $premblyEnabledProducts = $premblyProducts
+            ->mapWithKeys(fn (array $product, string $productKey) => [$productKey => (bool) data_get($product, 'required', false)])
+            ->all();
+
         ProviderConfig::query()
             ->where('provider', 'youverify')
             ->delete();
@@ -22,18 +27,9 @@ class ProviderConfigSeeder extends Seeder
                     'channel' => 'identity',
                     'mode' => 'live',
                     'timeout_seconds' => 30,
-                    'country_scope' => ['NG', 'US'],
-                    'default_product' => 'bvn',
-                    'enabled_products' => [
-                        'bvn' => true,
-                        'nin' => true,
-                        'phone' => true,
-                        'cac' => false,
-                        'account_name_match' => true,
-                        'us_biodata' => true,
-                        'us_address' => true,
-                        'us_ssn' => false,
-                    ],
+                    'country_scope' => ['NG'],
+                    'default_product' => $premblyProducts->has('bvn_basic') ? 'bvn_basic' : $premblyProducts->keys()->first(),
+                    'enabled_products' => $premblyEnabledProducts,
                 ],
             ]
         );

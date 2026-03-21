@@ -7,6 +7,7 @@ use App\Models\VerificationService;
 use App\Services\Billing\WalletService;
 use App\Services\Kyc\KycStrengthService;
 use App\Services\SiteSettings;
+use App\Services\Verification\VerificationCatalogService;
 use App\Services\Verification\VerificationOrchestrator;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -21,6 +22,7 @@ class VerificationController extends Controller
         private SiteSettings $siteSettings,
         private VerificationOrchestrator $verificationOrchestrator,
         private KycStrengthService $kycStrength,
+        private VerificationCatalogService $verificationCatalog,
     ) {
     }
 
@@ -41,10 +43,17 @@ class VerificationController extends Controller
         abort_unless($this->siteSettings->current()->verification_enabled, 403, 'Verification requests are currently disabled.');
 
         $user = $request->user();
-        $services = VerificationService::query()
+        $services = $this->verificationCatalog
+            ->filterLaunchable(VerificationService::query()
             ->active()
             ->orderBy('name')
-            ->get();
+            ->get())
+            ->sortBy(fn (VerificationService $service) => sprintf(
+                '%s-%s',
+                data_get($this->verificationCatalog->definitionFor($service), 'service.featured', false) ? '0' : '1',
+                $service->name
+            ))
+            ->values();
 
         $selectedService = $services->firstWhere('id', (int) $request->query('service'));
         $discountRate = $user->currentDiscountRate((float) $this->siteSettings->current()->user_pro_discount_rate);
@@ -69,11 +78,19 @@ class VerificationController extends Controller
             ->whereKey($request->integer('service_id'))
             ->firstOrFail();
 
+        abort_unless($this->verificationCatalog->isLaunchable($service), 403, 'This verification service is currently unavailable.');
+
         $validated = $request->validate(
             $this->rulesFor($service),
             [],
             $this->attributeNamesFor($service)
         );
+
+        $exclusiveFieldErrors = $this->verificationCatalog->validateExclusiveFields($service, $validated);
+
+        if ($exclusiveFieldErrors !== []) {
+            throw ValidationException::withMessages($exclusiveFieldErrors);
+        }
 
         $wallet = $this->walletService->ensureWallet($request->user()->id);
         $price = $this->priceFor($request->user(), $service);
@@ -103,7 +120,7 @@ class VerificationController extends Controller
         $message = match ($verificationRequest->status) {
             'success' => 'Verification completed successfully.',
             'failed' => 'The provider could not verify this request.',
-            default => 'Verification submitted successfully and queued for processing.',
+            default => 'Verification submitted successfully.',
         };
 
         return redirect()
@@ -113,241 +130,25 @@ class VerificationController extends Controller
 
     private function rulesFor(VerificationService $service): array
     {
-        $rules = [
+        return [
             'service_id' => ['required', 'integer', 'exists:verification_services,id'],
-            'first_name' => ['nullable', 'string', 'max:100'],
-            'middle_name' => ['nullable', 'string', 'max:100'],
-            'last_name' => ['nullable', 'string', 'max:100'],
-            'dob' => ['nullable', 'date'],
-            'phone' => ['nullable', 'string', 'max:30'],
-            'address_line1' => ['nullable', 'string', 'max:255'],
-            'address_line2' => ['nullable', 'string', 'max:255'],
-            'city' => ['nullable', 'string', 'max:120'],
-            'state' => ['nullable', 'string', 'max:120'],
-            'zip' => ['nullable', 'string', 'max:20'],
+            ...$this->verificationCatalog->validationRulesFor($service),
         ];
-
-        return match (strtoupper($service->code)) {
-            'BVN' => $rules + [
-                'identifier' => ['required', 'digits:11'],
-            ],
-            'NIN' => $rules + [
-                'identifier' => ['required', 'digits:11'],
-            ],
-            'CAC' => [
-                'service_id' => ['required', 'integer', 'exists:verification_services,id'],
-                'identifier' => ['required', 'string', 'max:40'],
-                'company_name' => ['nullable', 'string', 'max:160'],
-            ],
-            'ACCOUNT_NAME_MATCH' => [
-                'service_id' => ['required', 'integer', 'exists:verification_services,id'],
-                'account_number' => ['required', 'digits:10'],
-                'bank_code' => ['required', 'string', 'max:10'],
-                'account_name' => ['required', 'string', 'max:160'],
-            ],
-            'PHONE' => [
-                'service_id' => ['required', 'integer', 'exists:verification_services,id'],
-                'identifier' => ['required', 'string', 'max:20'],
-            ],
-            'US_PHONE' => $rules + [
-                'identifier' => ['required', 'string', 'max:20'],
-            ],
-            'US_BIODATA' => [
-                'service_id' => ['required', 'integer', 'exists:verification_services,id'],
-                'first_name' => ['required', 'string', 'max:100'],
-                'middle_name' => ['nullable', 'string', 'max:100'],
-                'last_name' => ['required', 'string', 'max:100'],
-                'dob' => ['required', 'date'],
-                'address_line1' => ['required', 'string', 'max:255'],
-                'address_line2' => ['nullable', 'string', 'max:255'],
-                'city' => ['required', 'string', 'max:120'],
-                'state' => ['required', 'string', 'max:120'],
-                'zip' => ['nullable', 'string', 'max:20'],
-            ],
-            'US_ADDRESS' => [
-                'service_id' => ['required', 'integer', 'exists:verification_services,id'],
-                'address_line1' => ['required', 'string', 'max:255'],
-                'address_line2' => ['nullable', 'string', 'max:255'],
-                'city' => ['required', 'string', 'max:120'],
-                'state' => ['required', 'string', 'max:120'],
-                'zip' => ['required', 'string', 'max:20'],
-            ],
-            'US_SSN' => $rules + [
-                'identifier' => ['required', 'string', 'max:20'],
-            ],
-            default => [
-                'service_id' => ['required', 'integer', 'exists:verification_services,id'],
-                'identifier' => ['required', 'string', 'max:120'],
-            ],
-        };
     }
 
     private function attributeNamesFor(VerificationService $service): array
     {
-        return match (strtoupper($service->code)) {
-            'BVN' => ['identifier' => 'BVN'],
-            'NIN' => ['identifier' => 'NIN'],
-            'CAC' => ['identifier' => 'registration number'],
-            'ACCOUNT_NAME_MATCH' => [
-                'account_number' => 'account number',
-                'bank_code' => 'bank code',
-                'account_name' => 'account name',
-            ],
-            'PHONE' => ['identifier' => 'phone number'],
-            'US_PHONE' => ['identifier' => 'US phone number'],
-            'US_SSN' => ['identifier' => 'SSN'],
-            default => ['identifier' => 'identifier'],
-        };
+        return $this->verificationCatalog->attributeNamesFor($service);
     }
 
     private function payloadFor(VerificationService $service, array $validated): array
     {
-        return match (strtoupper($service->code)) {
-            'BVN' => [
-                'bvn' => $validated['identifier'],
-                'first_name' => $validated['first_name'] ?? null,
-                'middle_name' => $validated['middle_name'] ?? null,
-                'last_name' => $validated['last_name'] ?? null,
-                'dob' => $validated['dob'] ?? null,
-            ],
-            'NIN' => [
-                'nin' => $validated['identifier'],
-                'first_name' => $validated['first_name'] ?? null,
-                'middle_name' => $validated['middle_name'] ?? null,
-                'last_name' => $validated['last_name'] ?? null,
-                'dob' => $validated['dob'] ?? null,
-            ],
-            'CAC' => [
-                'registration_number' => $validated['identifier'],
-                'company_name' => $validated['company_name'] ?? null,
-            ],
-            'ACCOUNT_NAME_MATCH' => [
-                'account_number' => $validated['account_number'],
-                'bank_code' => $validated['bank_code'],
-                'account_name' => $validated['account_name'],
-            ],
-            'PHONE' => [
-                'phone' => $validated['identifier'],
-                'first_name' => $validated['first_name'] ?? null,
-                'middle_name' => $validated['middle_name'] ?? null,
-                'last_name' => $validated['last_name'] ?? null,
-                'dob' => $validated['dob'] ?? null,
-            ],
-            'US_PHONE' => [
-                'phone' => $validated['identifier'],
-                'first_name' => $validated['first_name'] ?? null,
-                'middle_name' => $validated['middle_name'] ?? null,
-                'last_name' => $validated['last_name'] ?? null,
-                'dob' => $validated['dob'] ?? null,
-                'country' => 'US',
-            ],
-            'US_BIODATA' => [
-                'first_name' => $validated['first_name'],
-                'middle_name' => $validated['middle_name'] ?? null,
-                'last_name' => $validated['last_name'],
-                'dob' => $validated['dob'],
-                'address_line1' => $validated['address_line1'],
-                'address_line2' => $validated['address_line2'] ?? null,
-                'city' => $validated['city'],
-                'state' => $validated['state'],
-                'zip' => $validated['zip'] ?? null,
-                'country' => 'US',
-            ],
-            'US_ADDRESS' => [
-                'address_line1' => $validated['address_line1'],
-                'address_line2' => $validated['address_line2'] ?? null,
-                'city' => $validated['city'],
-                'state' => $validated['state'],
-                'zip' => $validated['zip'],
-                'country' => 'US',
-            ],
-            'US_SSN' => [
-                'ssn' => $validated['identifier'],
-                'tin' => $validated['identifier'],
-                'first_name' => $validated['first_name'] ?? null,
-                'middle_name' => $validated['middle_name'] ?? null,
-                'last_name' => $validated['last_name'] ?? null,
-                'dob' => $validated['dob'] ?? null,
-                'address_line1' => $validated['address_line1'] ?? null,
-                'address_line2' => $validated['address_line2'] ?? null,
-                'city' => $validated['city'] ?? null,
-                'state' => $validated['state'] ?? null,
-                'zip' => $validated['zip'] ?? null,
-                'country' => 'US',
-            ],
-            default => [
-                'identifier' => $validated['identifier'],
-            ],
-        };
+        return $this->verificationCatalog->payloadFor($service, $validated);
     }
 
     private function fieldBlueprintsFor(VerificationService $service): array
     {
-        return match (strtoupper($service->code)) {
-            'BVN' => [
-                ['name' => 'identifier', 'label' => 'BVN', 'type' => 'text', 'placeholder' => '22123456789', 'helper' => '11-digit Bank Verification Number'],
-                ['name' => 'first_name', 'label' => 'First Name', 'type' => 'text', 'placeholder' => 'Ada', 'helper' => 'Optional but improves provider matching'],
-                ['name' => 'middle_name', 'label' => 'Middle Name', 'type' => 'text', 'placeholder' => 'N.', 'helper' => 'Optional'],
-                ['name' => 'last_name', 'label' => 'Last Name', 'type' => 'text', 'placeholder' => 'Okafor', 'helper' => 'Optional but recommended'],
-                ['name' => 'dob', 'label' => 'Date of Birth', 'type' => 'date', 'placeholder' => '', 'helper' => 'Optional, use YYYY-MM-DD'],
-            ],
-            'NIN' => [
-                ['name' => 'identifier', 'label' => 'NIN', 'type' => 'text', 'placeholder' => '12345678901', 'helper' => '11-digit National Identification Number'],
-                ['name' => 'first_name', 'label' => 'First Name', 'type' => 'text', 'placeholder' => 'Chinonso', 'helper' => 'Optional'],
-                ['name' => 'middle_name', 'label' => 'Middle Name', 'type' => 'text', 'placeholder' => 'K.', 'helper' => 'Optional'],
-                ['name' => 'last_name', 'label' => 'Last Name', 'type' => 'text', 'placeholder' => 'Eze', 'helper' => 'Optional'],
-                ['name' => 'dob', 'label' => 'Date of Birth', 'type' => 'date', 'placeholder' => '', 'helper' => 'Optional, use YYYY-MM-DD'],
-            ],
-            'CAC' => [
-                ['name' => 'identifier', 'label' => 'Registration Number', 'type' => 'text', 'placeholder' => 'RC1234567', 'helper' => 'Company registration number'],
-                ['name' => 'company_name', 'label' => 'Company Name', 'type' => 'text', 'placeholder' => 'Kycappx Labs Limited', 'helper' => 'Optional but useful for reviews'],
-            ],
-            'ACCOUNT_NAME_MATCH' => [
-                ['name' => 'account_number', 'label' => 'Account Number', 'type' => 'text', 'placeholder' => '1010101010', 'helper' => '10-digit Nigerian bank account number'],
-                ['name' => 'bank_code', 'label' => 'Bank Code', 'type' => 'text', 'placeholder' => '214', 'helper' => 'Use the provider bank code for the account bank'],
-                ['name' => 'account_name', 'label' => 'Account Name', 'type' => 'text', 'placeholder' => 'John Doe', 'helper' => 'Full name to compare against the account record'],
-            ],
-            'PHONE' => [
-                ['name' => 'identifier', 'label' => 'Phone Number', 'type' => 'text', 'placeholder' => '08030000000', 'helper' => 'Use a valid Nigerian phone number'],
-            ],
-            'US_PHONE' => [
-                ['name' => 'identifier', 'label' => 'US Phone Number', 'type' => 'text', 'placeholder' => '+14155550123', 'helper' => 'Use a valid US phone number'],
-                ['name' => 'first_name', 'label' => 'First Name', 'type' => 'text', 'placeholder' => 'Jordan', 'helper' => 'Optional but useful for phone-owner matching'],
-                ['name' => 'last_name', 'label' => 'Last Name', 'type' => 'text', 'placeholder' => 'Cole', 'helper' => 'Optional'],
-                ['name' => 'dob', 'label' => 'Date of Birth', 'type' => 'date', 'placeholder' => '', 'helper' => 'Optional, use YYYY-MM-DD'],
-            ],
-            'US_BIODATA' => [
-                ['name' => 'first_name', 'label' => 'First Name', 'type' => 'text', 'placeholder' => 'Avery', 'helper' => 'Required for biodata screening'],
-                ['name' => 'middle_name', 'label' => 'Middle Name', 'type' => 'text', 'placeholder' => 'J.', 'helper' => 'Optional'],
-                ['name' => 'last_name', 'label' => 'Last Name', 'type' => 'text', 'placeholder' => 'Smith', 'helper' => 'Required for biodata screening'],
-                ['name' => 'dob', 'label' => 'Date of Birth', 'type' => 'date', 'placeholder' => '', 'helper' => 'Required'],
-                ['name' => 'address_line1', 'label' => 'Address Line 1', 'type' => 'text', 'placeholder' => '123 Main Street', 'helper' => 'Residential address'],
-                ['name' => 'address_line2', 'label' => 'Address Line 2', 'type' => 'text', 'placeholder' => 'Apt 4B', 'helper' => 'Optional'],
-                ['name' => 'city', 'label' => 'City', 'type' => 'text', 'placeholder' => 'Houston', 'helper' => 'Required'],
-                ['name' => 'state', 'label' => 'State', 'type' => 'text', 'placeholder' => 'Texas', 'helper' => 'Required'],
-                ['name' => 'zip', 'label' => 'ZIP Code', 'type' => 'text', 'placeholder' => '77002', 'helper' => 'Optional but recommended'],
-            ],
-            'US_ADDRESS' => [
-                ['name' => 'address_line1', 'label' => 'Address Line 1', 'type' => 'text', 'placeholder' => '456 Market Street', 'helper' => 'Street address'],
-                ['name' => 'address_line2', 'label' => 'Address Line 2', 'type' => 'text', 'placeholder' => 'Suite 300', 'helper' => 'Optional'],
-                ['name' => 'city', 'label' => 'City', 'type' => 'text', 'placeholder' => 'San Francisco', 'helper' => 'Required'],
-                ['name' => 'state', 'label' => 'State', 'type' => 'text', 'placeholder' => 'California', 'helper' => 'Required'],
-                ['name' => 'zip', 'label' => 'ZIP Code', 'type' => 'text', 'placeholder' => '94105', 'helper' => 'Required'],
-            ],
-            'US_SSN' => [
-                ['name' => 'identifier', 'label' => 'SSN', 'type' => 'text', 'placeholder' => '123456789', 'helper' => 'Social Security Number'],
-                ['name' => 'first_name', 'label' => 'First Name', 'type' => 'text', 'placeholder' => 'Taylor', 'helper' => 'Required for stronger matching'],
-                ['name' => 'last_name', 'label' => 'Last Name', 'type' => 'text', 'placeholder' => 'Brown', 'helper' => 'Required for stronger matching'],
-                ['name' => 'dob', 'label' => 'Date of Birth', 'type' => 'date', 'placeholder' => '', 'helper' => 'Recommended'],
-                ['name' => 'address_line1', 'label' => 'Address Line 1', 'type' => 'text', 'placeholder' => '789 Pine Avenue', 'helper' => 'Optional but helpful for manual review'],
-                ['name' => 'city', 'label' => 'City', 'type' => 'text', 'placeholder' => 'Atlanta', 'helper' => 'Optional'],
-                ['name' => 'state', 'label' => 'State', 'type' => 'text', 'placeholder' => 'Georgia', 'helper' => 'Optional'],
-                ['name' => 'zip', 'label' => 'ZIP Code', 'type' => 'text', 'placeholder' => '30303', 'helper' => 'Optional'],
-            ],
-            default => [
-                ['name' => 'identifier', 'label' => 'Identifier', 'type' => 'text', 'placeholder' => 'Enter the request value', 'helper' => 'Provide the primary lookup value for this service'],
-            ],
-        };
+        return $this->verificationCatalog->fieldBlueprintsFor($service);
     }
 
     private function fieldDefaultsFor($user, ?VerificationService $service = null): array
@@ -358,15 +159,7 @@ class VerificationController extends Controller
             return $defaults;
         }
 
-        $defaults['identifier'] = match (strtoupper($service->code)) {
-            'BVN' => data_get($defaults, 'bvn'),
-            'NIN' => data_get($defaults, 'nin'),
-            'PHONE', 'US_PHONE' => data_get($defaults, 'phone'),
-            'US_SSN' => data_get($defaults, 'ssn'),
-            default => data_get($defaults, 'identifier'),
-        };
-
-        return $defaults;
+        return $this->verificationCatalog->defaultValuesFor($service, $defaults);
     }
 
     private function priceFor($user, VerificationService $service): float
