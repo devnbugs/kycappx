@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Jobs\ProcessVerificationRequestJob;
 use App\Models\DedicatedVirtualAccount;
 use App\Models\SmsDispatch;
 use App\Models\User;
@@ -9,6 +10,7 @@ use App\Models\VerificationRequest;
 use App\Models\VerificationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Queue;
 use Tests\TestCase;
 
 class ProviderAutomationTest extends TestCase
@@ -89,6 +91,114 @@ class ProviderAutomationTest extends TestCase
         $sms = SmsDispatch::query()->firstOrFail();
         $this->assertSame('success', $sms->status);
         $this->assertSame('batch_123', $sms->remote_reference);
+    }
+
+    public function test_verification_submission_is_queued_before_processing(): void
+    {
+        Queue::fake();
+
+        config([
+            'services.prembly.app_id' => 'prembly-app',
+            'services.prembly.secret_key' => 'prembly-secret',
+        ]);
+
+        $user = User::factory()->create();
+        $user->wallet()->create([
+            'currency' => 'NGN',
+            'balance' => 1000,
+            'status' => 'active',
+        ]);
+
+        $service = VerificationService::create([
+            'code' => 'BVN',
+            'name' => 'Bank Verification Number',
+            'type' => 'kyc',
+            'country' => 'NG',
+            'is_active' => true,
+            'default_price' => 150,
+            'default_cost' => 95,
+            'required_fields' => ['bvn'],
+        ]);
+
+        $response = $this->actingAs($user)->post('/verifications', [
+            'service_id' => $service->id,
+            'identifier' => '22123456789',
+        ]);
+
+        $response->assertRedirect('/verifications');
+        Queue::assertPushed(ProcessVerificationRequestJob::class, 1);
+
+        $verification = VerificationRequest::query()->firstOrFail();
+        $this->assertSame('pending', $verification->status);
+        $this->assertNull($verification->provider_used);
+        $this->assertSame('1000.00', $user->wallet->fresh()->balance);
+        $this->assertDatabaseCount('sms_dispatches', 0);
+    }
+
+    public function test_user_can_run_bank_account_name_match_verification(): void
+    {
+        config([
+            'services.prembly.app_id' => 'prembly-app',
+            'services.prembly.secret_key' => 'prembly-secret',
+        ]);
+
+        Http::fake([
+            'https://api.prembly.com/identitypass/verification/bank_account/comparism' => Http::response([
+                'status' => true,
+                'detail' => 'Verification successful',
+                'response_code' => '00',
+                'account_data' => [
+                    'account_number' => '1010101010',
+                    'account_name' => 'John Doe',
+                    'bank_id' => 9,
+                ],
+                'comparism_data' => [
+                    'status' => true,
+                    'confidence' => 0.98,
+                ],
+                'verification' => [
+                    'reference' => 'prembly-bank-ref-123',
+                ],
+            ], 200),
+        ]);
+
+        $user = User::factory()->create([
+            'phone' => null,
+            'settings' => ['security_alerts' => false],
+        ]);
+        $user->wallet()->create([
+            'currency' => 'NGN',
+            'balance' => 1000,
+            'status' => 'active',
+        ]);
+
+        $service = VerificationService::create([
+            'code' => 'ACCOUNT_NAME_MATCH',
+            'name' => 'Bank Account Name Match',
+            'type' => 'kyc',
+            'country' => 'NG',
+            'is_active' => true,
+            'default_price' => 100,
+            'default_cost' => 70,
+            'required_fields' => ['account_number', 'bank_code', 'account_name'],
+        ]);
+
+        $response = $this->actingAs($user)->post('/verifications', [
+            'service_id' => $service->id,
+            'account_number' => '1010101010',
+            'bank_code' => '214',
+            'account_name' => 'John Doe',
+        ]);
+
+        $response->assertRedirect('/verifications');
+
+        $verification = VerificationRequest::query()->firstOrFail();
+        $this->assertSame('success', $verification->status);
+        $this->assertSame('prembly', $verification->provider_used);
+        $this->assertSame('900.00', $user->wallet->fresh()->balance);
+        $this->assertSame('John Doe', data_get($verification->normalized_response, 'account_name'));
+        $this->assertSame(0.98, data_get($verification->normalized_response, 'confidence'));
+        $this->assertTrue((bool) data_get($verification->normalized_response, 'match_status'));
     }
 
     public function test_user_can_create_a_squad_virtual_account_from_saved_kyc_data(): void

@@ -51,6 +51,16 @@ class VerificationServiceSeeder extends Seeder
                 'required_fields' => ['registration_number', 'company_name'],
             ],
             [
+                'code' => 'ACCOUNT_NAME_MATCH',
+                'name' => 'Bank Account Name Match',
+                'type' => 'kyc',
+                'country' => 'NG',
+                'is_active' => true,
+                'default_price' => 100,
+                'default_cost' => 70,
+                'required_fields' => ['account_number', 'bank_code', 'account_name'],
+            ],
+            [
                 'code' => 'US_PHONE',
                 'name' => 'US Phone Intelligence Lookup',
                 'type' => 'kyc',

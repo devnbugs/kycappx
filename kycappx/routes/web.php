@@ -24,6 +24,9 @@ Route::get('/', function () {
     return view('welcome');
 })->name('home');
 
+Route::view('/privacy-policy', 'legal.privacy-policy')->name('privacy-policy');
+Route::view('/terms-of-service', 'legal.terms-of-service')->name('terms-of-service');
+
 Route::middleware('auth')->group(function () {
     Route::controller(DashboardController::class)->group(function () {
         Route::get('/dashboard', 'index')->name('dashboard');

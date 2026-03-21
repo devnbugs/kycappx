@@ -199,6 +199,50 @@ class PremblyProvider implements VerificationProviderInterface
         );
     }
 
+    public function verifyBankAccountComparison(array $payload): ProviderResult
+    {
+        $accountNumber = $payload['account_number'] ?? $payload['number'] ?? null;
+        $customerName = $payload['account_name'] ?? $payload['customer_name'] ?? $payload['customer'] ?? null;
+        $response = $this->request('/identitypass/verification/bank_account/comparism', [
+            'number' => $accountNumber,
+            'bank_code' => $payload['bank_code'] ?? null,
+            'customer' => $customerName,
+        ]);
+        $raw = $response['body'];
+
+        if (! $response['ok']) {
+            return new ProviderResult(
+                false,
+                $this->providerName(),
+                data_get($raw, 'verification.reference'),
+                [],
+                $raw,
+                data_get($raw, 'detail', 'Prembly account name comparison failed.')
+            );
+        }
+
+        $comparisonMatched = (bool) data_get($raw, 'comparism_data.status', false);
+        $normalized = [
+            'account_number' => data_get($raw, 'account_data.account_number', $accountNumber),
+            'account_name' => data_get($raw, 'account_data.account_name'),
+            'bank_id' => data_get($raw, 'account_data.bank_id'),
+            'bank_code' => $payload['bank_code'] ?? null,
+            'customer_name' => $customerName,
+            'match_status' => $comparisonMatched,
+            'confidence' => data_get($raw, 'comparism_data.confidence'),
+            'provider_message' => data_get($raw, 'detail'),
+        ];
+
+        return new ProviderResult(
+            $comparisonMatched,
+            $this->providerName(),
+            data_get($raw, 'verification.reference'),
+            $normalized,
+            $raw,
+            $comparisonMatched ? null : 'The supplied account name does not match the bank account details.'
+        );
+    }
+
     public function verifyUsBiodata(array $payload): ProviderResult
     {
         $response = $this->request('/background-check/api/v1/usa/bio-data', [

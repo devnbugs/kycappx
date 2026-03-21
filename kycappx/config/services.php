@@ -184,6 +184,13 @@ return [
                 'endpoint' => '/verification/cac/advance',
                 'required' => true,
             ],
+            'account_name_match' => [
+                'label' => 'Bank Account Name Match',
+                'description' => 'Nigeria bank account verification with account-name comparison.',
+                'countries' => ['NG'],
+                'endpoint' => '/identitypass/verification/bank_account/comparism',
+                'required' => true,
+            ],
             'us_biodata' => [
                 'label' => 'USA Biodata',
                 'description' => 'United States biodata background checks for identity screening workflows.',

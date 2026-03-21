@@ -3,6 +3,7 @@
 namespace App\Services\Verification;
 
 use App\Contracts\VerificationProviderInterface;
+use App\Jobs\ProcessVerificationRequestJob;
 use App\Models\ProviderConfig;
 use App\Models\User;
 use App\Models\VerificationAttempt;
@@ -38,30 +39,61 @@ class VerificationOrchestrator
             'user_id' => $user->id,
             'verification_service_id' => $service->id,
             'reference' => $reference,
-            'status' => 'processing',
+            'status' => 'pending',
             'customer_price' => $customerPrice,
             'provider_cost' => $service->default_cost,
+            'request_payload' => $payload,
+        ]);
+
+        ProcessVerificationRequestJob::dispatch($verificationRequest->id);
+
+        return $verificationRequest->forceFill([
             'request_payload' => $maskedPayload,
+        ])->fresh(['service']);
+    }
+
+    public function process(VerificationRequest $verificationRequest): VerificationRequest
+    {
+        $verificationRequest->loadMissing(['service', 'user']);
+
+        if ($verificationRequest->completed_at) {
+            return $verificationRequest->fresh(['service']);
+        }
+
+        $service = $verificationRequest->service;
+        $user = $verificationRequest->user;
+
+        if (! $service || ! $user) {
+            throw new RuntimeException('Verification request is missing its service or user.');
+        }
+
+        $verificationRequest->update([
+            'status' => 'processing',
         ]);
 
         $provider = $this->resolveProvider($service);
+        $payload = $this->payloadFromRequest($verificationRequest);
+        $maskedPayload = $this->maskSensitivePayload($payload);
 
         if (! $provider) {
             $verificationRequest->update([
                 'status' => 'failed',
+                'request_payload' => $maskedPayload,
                 'normalized_response' => [
                     'message' => 'Automation is not configured for this verification yet.',
                 ],
                 'completed_at' => now(),
             ]);
 
-            return $verificationRequest->fresh(['service']);
+            return $verificationRequest->forceFill([
+                'request_payload' => $maskedPayload,
+            ])->fresh(['service']);
         }
 
         $attempt = VerificationAttempt::create([
             'verification_request_id' => $verificationRequest->id,
             'provider' => $provider->providerName(),
-            'attempt_no' => 1,
+            'attempt_no' => (int) $verificationRequest->attempts()->max('attempt_no') + 1,
             'status' => 'processing',
             'request_payload' => $maskedPayload,
             'started_at' => now(),
@@ -80,17 +112,22 @@ class VerificationOrchestrator
 
             $verificationRequest->update([
                 'status' => 'failed',
+                'request_payload' => $maskedPayload,
                 'provider_used' => $provider->providerName(),
                 'normalized_response' => ['message' => 'Verification provider request failed.'],
                 'raw_response' => ['error' => $exception->getMessage()],
                 'completed_at' => now(),
             ]);
 
-            return $verificationRequest->fresh(['service']);
+            return $verificationRequest->forceFill([
+                'request_payload' => $maskedPayload,
+            ])->fresh(['service']);
         }
 
         $status = $result->ok ? 'success' : 'failed';
         $errorMessage = $result->error;
+        $discountRate = $user->currentDiscountRate((float) $this->siteSettings->current()->user_pro_discount_rate);
+        $customerPrice = (float) $verificationRequest->customer_price;
 
         if ($result->ok && $customerPrice > 0) {
             try {
@@ -121,25 +158,29 @@ class VerificationOrchestrator
 
         $normalizedResponse = $result->normalized;
 
-        if ($result->ok) {
+        if ($result->reference) {
             $normalizedResponse['provider_reference'] = $result->reference;
         }
 
-        if ($result->ok && $errorMessage) {
-            $normalizedResponse['billing_message'] = $errorMessage;
+        if ($errorMessage) {
+            $normalizedResponse['message'] = $normalizedResponse['message'] ?? $errorMessage;
         }
 
         $verificationRequest->update([
             'status' => $status,
+            'request_payload' => $maskedPayload,
             'provider_used' => $provider->providerName(),
             'normalized_response' => $normalizedResponse,
             'raw_response' => $result->raw,
             'completed_at' => now(),
         ]);
 
-        $this->smsService->notifyVerificationResult($user, $verificationRequest->fresh(['service']));
+        $verificationRequest->refresh();
+        $this->smsService->notifyVerificationResult($user, $verificationRequest->loadMissing('service'));
 
-        return $verificationRequest->fresh(['service']);
+        return $verificationRequest->forceFill([
+            'request_payload' => $maskedPayload,
+        ])->fresh(['service']);
     }
 
     private function dispatchVerification(
@@ -152,16 +193,12 @@ class VerificationOrchestrator
             'NIN' => $provider->verifyNin($payload),
             'PHONE', 'US_PHONE' => $provider->verifyPhone($payload),
             'CAC' => $provider->verifyCac($payload),
+            'ACCOUNT_NAME_MATCH' => $provider->verifyBankAccountComparison($payload),
             'US_BIODATA' => $provider->verifyUsBiodata($payload),
             'US_ADDRESS' => $provider->verifyUsAddress($payload),
             'US_SSN' => $provider->verifyUsSsn($payload),
             default => throw new RuntimeException('This verification service is not supported yet.'),
         };
-    }
-
-    private function supportsAutomation(VerificationService $service): bool
-    {
-        return in_array(strtoupper($service->code), ['BVN', 'NIN', 'PHONE', 'US_PHONE', 'CAC', 'US_BIODATA', 'US_ADDRESS', 'US_SSN'], true);
     }
 
     private function resolveProvider(VerificationService $service): ?VerificationProviderInterface
@@ -205,6 +242,7 @@ class VerificationOrchestrator
             'NIN' => 'nin',
             'PHONE', 'US_PHONE' => 'phone',
             'CAC' => 'cac',
+            'ACCOUNT_NAME_MATCH' => 'account_name_match',
             'US_BIODATA' => 'us_biodata',
             'US_ADDRESS' => 'us_address',
             'US_SSN' => 'us_ssn',
@@ -224,10 +262,27 @@ class VerificationOrchestrator
             }
 
             return match ($key) {
-                'bvn', 'nin', 'ssn', 'tin', 'registration_number' => Str::mask($value, '*', 3, max(strlen($value) - 5, 0)),
+                'bvn', 'nin', 'ssn', 'tin', 'registration_number', 'account_number' => Str::mask($value, '*', 3, max(strlen($value) - 5, 0)),
                 'phone', 'identifier' => Str::mask($value, '*', 3, max(strlen($value) - 5, 0)),
                 default => $value,
             };
         })->all();
+    }
+
+    private function payloadFromRequest(VerificationRequest $verificationRequest): array
+    {
+        $payload = $verificationRequest->getRawOriginal('request_payload');
+
+        if (is_array($payload)) {
+            return $payload;
+        }
+
+        if (is_string($payload)) {
+            $decoded = json_decode($payload, true);
+
+            return is_array($decoded) ? $decoded : [];
+        }
+
+        return [];
     }
 }

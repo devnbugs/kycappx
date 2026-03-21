@@ -103,7 +103,7 @@ class VerificationController extends Controller
         $message = match ($verificationRequest->status) {
             'success' => 'Verification completed successfully.',
             'failed' => 'The provider could not verify this request.',
-            default => 'Verification submitted and is still processing.',
+            default => 'Verification submitted successfully and queued for processing.',
         };
 
         return redirect()
@@ -138,6 +138,12 @@ class VerificationController extends Controller
                 'service_id' => ['required', 'integer', 'exists:verification_services,id'],
                 'identifier' => ['required', 'string', 'max:40'],
                 'company_name' => ['nullable', 'string', 'max:160'],
+            ],
+            'ACCOUNT_NAME_MATCH' => [
+                'service_id' => ['required', 'integer', 'exists:verification_services,id'],
+                'account_number' => ['required', 'digits:10'],
+                'bank_code' => ['required', 'string', 'max:10'],
+                'account_name' => ['required', 'string', 'max:160'],
             ],
             'PHONE' => [
                 'service_id' => ['required', 'integer', 'exists:verification_services,id'],
@@ -182,6 +188,11 @@ class VerificationController extends Controller
             'BVN' => ['identifier' => 'BVN'],
             'NIN' => ['identifier' => 'NIN'],
             'CAC' => ['identifier' => 'registration number'],
+            'ACCOUNT_NAME_MATCH' => [
+                'account_number' => 'account number',
+                'bank_code' => 'bank code',
+                'account_name' => 'account name',
+            ],
             'PHONE' => ['identifier' => 'phone number'],
             'US_PHONE' => ['identifier' => 'US phone number'],
             'US_SSN' => ['identifier' => 'SSN'],
@@ -209,6 +220,11 @@ class VerificationController extends Controller
             'CAC' => [
                 'registration_number' => $validated['identifier'],
                 'company_name' => $validated['company_name'] ?? null,
+            ],
+            'ACCOUNT_NAME_MATCH' => [
+                'account_number' => $validated['account_number'],
+                'bank_code' => $validated['bank_code'],
+                'account_name' => $validated['account_name'],
             ],
             'PHONE' => [
                 'phone' => $validated['identifier'],
@@ -285,6 +301,11 @@ class VerificationController extends Controller
             'CAC' => [
                 ['name' => 'identifier', 'label' => 'Registration Number', 'type' => 'text', 'placeholder' => 'RC1234567', 'helper' => 'Company registration number'],
                 ['name' => 'company_name', 'label' => 'Company Name', 'type' => 'text', 'placeholder' => 'Kycappx Labs Limited', 'helper' => 'Optional but useful for reviews'],
+            ],
+            'ACCOUNT_NAME_MATCH' => [
+                ['name' => 'account_number', 'label' => 'Account Number', 'type' => 'text', 'placeholder' => '1010101010', 'helper' => '10-digit Nigerian bank account number'],
+                ['name' => 'bank_code', 'label' => 'Bank Code', 'type' => 'text', 'placeholder' => '214', 'helper' => 'Use the provider bank code for the account bank'],
+                ['name' => 'account_name', 'label' => 'Account Name', 'type' => 'text', 'placeholder' => 'John Doe', 'helper' => 'Full name to compare against the account record'],
             ],
             'PHONE' => [
                 ['name' => 'identifier', 'label' => 'Phone Number', 'type' => 'text', 'placeholder' => '08030000000', 'helper' => 'Use a valid Nigerian phone number'],

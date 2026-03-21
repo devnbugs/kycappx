@@ -12,6 +12,7 @@ interface VerificationProviderInterface
     public function verifyNin(array $payload): ProviderResult;
     public function verifyPhone(array $payload): ProviderResult;
     public function verifyCac(array $payload): ProviderResult;
+    public function verifyBankAccountComparison(array $payload): ProviderResult;
     public function verifyUsBiodata(array $payload): ProviderResult;
     public function verifyUsAddress(array $payload): ProviderResult;
     public function verifyUsSsn(array $payload): ProviderResult;

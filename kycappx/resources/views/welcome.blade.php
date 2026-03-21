@@ -185,6 +185,8 @@
                         @if ($siteSettings->support_phone)
                             <span>{{ $siteSettings->support_phone }}</span>
                         @endif
+                        <a href="{{ route('privacy-policy') }}" class="font-medium text-slate-700 hover:text-slate-950 dark:text-slate-300 dark:hover:text-white">Privacy Policy</a>
+                        <a href="{{ route('terms-of-service') }}" class="font-medium text-slate-700 hover:text-slate-950 dark:text-slate-300 dark:hover:text-white">Terms</a>
                         <a href="{{ route('login') }}" class="font-medium text-slate-700 hover:text-slate-950 dark:text-slate-300 dark:hover:text-white">Login</a>
                     </div>
                 </div>

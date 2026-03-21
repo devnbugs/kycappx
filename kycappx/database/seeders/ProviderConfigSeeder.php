@@ -29,6 +29,7 @@ class ProviderConfigSeeder extends Seeder
                         'nin' => true,
                         'phone' => true,
                         'cac' => false,
+                        'account_name_match' => true,
                         'us_biodata' => true,
                         'us_address' => true,
                         'us_ssn' => false,
