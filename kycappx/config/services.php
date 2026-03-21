@@ -153,7 +153,7 @@ return [
     'prembly' => [
         'base_url' => env('PREMBLY_BASE_URL', 'https://api.prembly.com'),
         'app_id' => env('PREMBLY_APP_ID'),
-        'secret_key' => env('PREMBLY_SECRET_KEY'),
+        'secret_key' => env('PREMBLY_SECRET_KEY'), 
         'countries' => ['NG'],
         'products' => require __DIR__.'/prembly_products.php',
     ],
