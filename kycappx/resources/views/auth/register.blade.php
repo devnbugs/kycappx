@@ -8,7 +8,7 @@
             </p>
         </div>
 
-        @if ($siteSettings->google_auth_enabled)
+        @if ($siteSettings->google_auth_enabled && filled(config('services.google.client_id')) && filled(config('services.google.client_secret')))
             <a href="{{ route('social.redirect', 'google') }}" class="block">
                 <flux:button variant="outline" class="w-full justify-center" icon="globe-alt">
                     Sign up with Google

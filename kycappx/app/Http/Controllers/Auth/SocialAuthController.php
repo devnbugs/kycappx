@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Laravel\Socialite\Facades\Socialite;
+use Laravel\Socialite\Two\AbstractProvider;
 use RuntimeException;
 use Spatie\Permission\Models\Role;
 use Throwable;
@@ -28,9 +29,13 @@ class SocialAuthController extends Controller
         abort_unless($provider === 'google', 404);
         abort_unless($this->siteSettings->current()->google_auth_enabled, 404);
 
-        return Socialite::driver($provider)
-            ->scopes(['openid', 'profile', 'email'])
-            ->redirect();
+        if (! $this->googleIsConfigured()) {
+            return redirect()
+                ->route('login')
+                ->withErrors(['login' => 'Google sign-in is not configured yet. Please contact support.']);
+        }
+
+        return $this->googleDriver()->redirect();
     }
 
     public function callback(Request $request, string $provider): RedirectResponse
@@ -38,8 +43,14 @@ class SocialAuthController extends Controller
         abort_unless($provider === 'google', 404);
         abort_unless($this->siteSettings->current()->google_auth_enabled, 404);
 
+        if (! $this->googleIsConfigured()) {
+            return redirect()
+                ->route('login')
+                ->withErrors(['login' => 'Google sign-in is not configured yet. Please contact support.']);
+        }
+
         try {
-            $socialUser = Socialite::driver($provider)->stateless()->user();
+            $socialUser = $this->googleDriver()->user();
         } catch (Throwable $exception) {
             report($exception);
 
@@ -159,5 +170,28 @@ class SocialAuthController extends Controller
         }
 
         return $candidate;
+    }
+
+    private function googleDriver(): AbstractProvider
+    {
+        /** @var AbstractProvider $driver */
+        $driver = Socialite::driver('google');
+
+        return $driver
+            ->redirectUrl($this->googleRedirectUrl())
+            ->scopes(['openid', 'profile', 'email'])
+            ->stateless();
+    }
+
+    private function googleIsConfigured(): bool
+    {
+        return filled(config('services.google.client_id'))
+            && filled(config('services.google.client_secret'));
+    }
+
+    private function googleRedirectUrl(): string
+    {
+        return (string) (config('services.google.redirect')
+            ?: route('social.callback', ['provider' => 'google'], absolute: true));
     }
 }
