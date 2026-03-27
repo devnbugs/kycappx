@@ -133,7 +133,7 @@
         <x-dashboard.verification-launchpad
             :services="$activeServices"
             title="Launch Verification Fast"
-            copy="Run the most-used Prembly checks without hunting through the catalog first."
+            copy="Run the most-used verification checks without hunting through the full catalog first."
             button-label="Browse All Services"
         />
 
@@ -163,7 +163,7 @@
                             <tr class="table-row">
                                 <td class="px-6 py-4">
                                     <div class="font-semibold text-slate-950 dark:text-slate-50">{{ $verification->service?->name ?? 'Unknown service' }}</div>
-                                    <div class="text-xs text-slate-500 dark:text-slate-400">{{ $verification->provider_used ?: 'Awaiting provider' }}</div>
+                                    <div class="text-xs text-slate-500 dark:text-slate-400">{{ data_get($verificationProviderLabels, strtolower((string) $verification->provider_used), 'Awaiting engine') }}</div>
                                 </td>
                                 <td class="px-6 py-4 font-mono text-xs text-slate-700 dark:text-slate-300">{{ $verification->reference }}</td>
                                 <td class="px-6 py-4">

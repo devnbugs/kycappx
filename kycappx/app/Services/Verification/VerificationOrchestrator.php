@@ -3,15 +3,15 @@
 namespace App\Services\Verification;
 
 use App\Contracts\VerificationProviderInterface;
-use App\Models\ProviderConfig;
 use App\Models\User;
 use App\Models\VerificationAttempt;
 use App\Models\VerificationRequest;
 use App\Models\VerificationService;
+use App\Providers\Verification\Interswitch\InterswitchIdentityProvider;
+use App\Providers\Verification\Kora\KoraIdentityProvider;
 use App\Providers\Verification\Prembly\PremblyProvider;
 use App\Services\Billing\WalletService;
 use App\Services\Messaging\SquadSmsService;
-use App\Services\Providers\ProviderFeatureService;
 use App\Services\SiteSettings;
 use Illuminate\Support\Str;
 use RuntimeException;
@@ -22,9 +22,9 @@ class VerificationOrchestrator
     public function __construct(
         private WalletService $walletService,
         private SiteSettings $siteSettings,
-        private ProviderFeatureService $providerFeatures,
         private SquadSmsService $smsService,
         private VerificationCatalogService $verificationCatalog,
+        private IdentityEngineRegistry $identityEngines,
     ) {
     }
 
@@ -71,16 +71,16 @@ class VerificationOrchestrator
             'status' => 'processing',
         ]);
 
-        $provider = $this->resolveProvider($service);
         $payload = $this->payloadFromRequest($verificationRequest);
         $maskedPayload = $this->maskSensitivePayload($payload);
+        $providers = $this->resolveProviders($service);
 
-        if (! $provider) {
+        if ($providers === []) {
             $verificationRequest->update([
                 'status' => 'failed',
                 'request_payload' => $maskedPayload,
                 'normalized_response' => [
-                    'message' => 'Automation is not configured for this verification yet.',
+                    'message' => 'No active identity engine is configured for this verification yet.',
                 ],
                 'completed_at' => now(),
             ]);
@@ -90,32 +90,64 @@ class VerificationOrchestrator
             ])->fresh(['service']);
         }
 
-        $attempt = VerificationAttempt::create([
-            'verification_request_id' => $verificationRequest->id,
-            'provider' => $provider->providerName(),
-            'attempt_no' => (int) $verificationRequest->attempts()->max('attempt_no') + 1,
-            'status' => 'processing',
-            'request_payload' => $maskedPayload,
-            'started_at' => now(),
-        ]);
+        $attemptNumber = (int) $verificationRequest->attempts()->max('attempt_no');
+        $successfulProvider = null;
+        $result = null;
+        $lastErrorMessage = null;
 
-        try {
-            $result = $this->dispatchVerification($provider, $service, $payload);
-        } catch (Throwable $exception) {
-            report($exception);
+        foreach ($providers as $providerBundle) {
+            /** @var VerificationProviderInterface $provider */
+            $provider = $providerBundle['instance'];
+            $route = $providerBundle['route'];
+
+            $attempt = VerificationAttempt::create([
+                'verification_request_id' => $verificationRequest->id,
+                'provider' => $provider->providerName(),
+                'attempt_no' => ++$attemptNumber,
+                'status' => 'processing',
+                'request_payload' => $maskedPayload,
+                'started_at' => now(),
+            ]);
+
+            try {
+                $result = $this->dispatchVerification($provider, $service, $payload, $route);
+            } catch (Throwable $exception) {
+                report($exception);
+
+                $lastErrorMessage = $exception->getMessage();
+                $attempt->update([
+                    'status' => 'failed',
+                    'error_message' => $lastErrorMessage,
+                    'finished_at' => now(),
+                ]);
+
+                continue;
+            }
 
             $attempt->update([
-                'status' => 'failed',
-                'error_message' => $exception->getMessage(),
+                'status' => $result->ok ? 'success' : 'failed',
+                'response_payload' => $result->raw,
+                'error_message' => $result->error,
                 'finished_at' => now(),
             ]);
 
+            if ($result->ok) {
+                $successfulProvider = $provider;
+                break;
+            }
+
+            $lastErrorMessage = $result->error;
+        }
+
+        if (! $successfulProvider || ! $result) {
             $verificationRequest->update([
                 'status' => 'failed',
                 'request_payload' => $maskedPayload,
-                'provider_used' => $provider->providerName(),
-                'normalized_response' => ['message' => 'Verification provider request failed.'],
-                'raw_response' => ['error' => $exception->getMessage()],
+                'provider_used' => $result?->provider,
+                'normalized_response' => [
+                    'message' => $result?->error ?: $lastErrorMessage ?: 'Verification provider request failed.',
+                ],
+                'raw_response' => $result?->raw ?? ['error' => $lastErrorMessage ?: 'Verification provider request failed.'],
                 'completed_at' => now(),
             ]);
 
@@ -124,12 +156,12 @@ class VerificationOrchestrator
             ])->fresh(['service']);
         }
 
-        $status = $result->ok ? 'success' : 'failed';
+        $status = 'success';
         $errorMessage = $result->error;
         $discountRate = $user->currentDiscountRate((float) $this->siteSettings->current()->user_pro_discount_rate);
         $customerPrice = (float) $verificationRequest->customer_price;
 
-        if ($result->ok && $customerPrice > 0) {
+        if ($customerPrice > 0) {
             try {
                 $this->walletService->debit(
                     userId: $user->id,
@@ -138,7 +170,7 @@ class VerificationOrchestrator
                     source: 'verification',
                     description: sprintf('%s verification', $service->name),
                     meta: [
-                        'provider' => $provider->providerName(),
+                        'provider' => $successfulProvider->providerName(),
                         'discount_rate' => $discountRate,
                     ]
                 );
@@ -148,13 +180,6 @@ class VerificationOrchestrator
                 $errorMessage = 'Provider completed, but wallet billing could not be captured automatically.';
             }
         }
-
-        $attempt->update([
-            'status' => $result->ok ? 'success' : 'failed',
-            'response_payload' => $result->raw,
-            'error_message' => $errorMessage,
-            'finished_at' => now(),
-        ]);
 
         $normalizedResponse = $result->normalized;
 
@@ -169,7 +194,7 @@ class VerificationOrchestrator
         $verificationRequest->update([
             'status' => $status,
             'request_payload' => $maskedPayload,
-            'provider_used' => $provider->providerName(),
+            'provider_used' => $successfulProvider->providerName(),
             'normalized_response' => $normalizedResponse,
             'raw_response' => $result->raw,
             'completed_at' => now(),
@@ -186,10 +211,11 @@ class VerificationOrchestrator
     private function dispatchVerification(
         VerificationProviderInterface $provider,
         VerificationService $service,
-        array $payload
+        array $payload,
+        array $route
     ) {
-        $definition = $this->verificationCatalog->definitionFor($service);
-        $productKey = $this->productKeyForService($service);
+        $definition = array_merge($this->verificationCatalog->definitionFor($service) ?? [], $route);
+        $productKey = (string) ($route['productKey'] ?? data_get($definition, 'product_key', ''));
 
         if (! $definition || ! $productKey) {
             throw new RuntimeException('This verification service is not supported yet.');
@@ -198,43 +224,31 @@ class VerificationOrchestrator
         return $provider->verifyCatalogProduct($productKey, $payload, $definition);
     }
 
-    private function resolveProvider(VerificationService $service): ?VerificationProviderInterface
+    private function resolveProviders(VerificationService $service): array
     {
-        $productKey = $this->productKeyForService($service);
-        $configuredProviders = ProviderConfig::query()
-            ->active()
-            ->whereIn('provider', ['prembly'])
-            ->orderBy('priority')
-            ->pluck('provider')
+        return collect($this->identityEngines->availableProvidersForService($service))
+            ->map(function (string $providerName) use ($service) {
+                $provider = match ($providerName) {
+                    'prembly' => new PremblyProvider(),
+                    'kora' => new KoraIdentityProvider(),
+                    'interswitch' => new InterswitchIdentityProvider(),
+                    default => null,
+                };
+
+                $route = $this->identityEngines->routeForService($providerName, $service);
+
+                if (! $provider || ! $route) {
+                    return null;
+                }
+
+                return [
+                    'instance' => $provider,
+                    'route' => $route,
+                ];
+            })
+            ->filter()
+            ->values()
             ->all();
-
-        if (empty($configuredProviders)) {
-            $configuredProviders = array_values(array_filter([
-                filled(config('services.prembly.app_id')) && filled(config('services.prembly.secret_key')) ? 'prembly' : null,
-            ]));
-        }
-
-        foreach ($configuredProviders as $providerName) {
-            if ($productKey && ! $this->providerFeatures->isProductEnabled($providerName, $productKey, true)) {
-                continue;
-            }
-
-            $provider = match ($providerName) {
-                'prembly' => new PremblyProvider(),
-                default => null,
-            };
-
-            if ($provider) {
-                return $provider;
-            }
-        }
-
-        return null;
-    }
-
-    private function productKeyForService(VerificationService $service): ?string
-    {
-        return data_get($this->verificationCatalog->definitionFor($service), 'product_key');
     }
 
     private function maskSensitivePayload(array $payload): array

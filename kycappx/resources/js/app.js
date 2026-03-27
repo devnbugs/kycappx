@@ -1,6 +1,7 @@
 import './bootstrap';
 
 const STORAGE_KEY = 'kycappx.theme';
+const DASHBOARD_SIDEBAR_STORAGE_PREFIX = 'kycappx.dashboard.sidebar';
 
 const resolveIsDark = (theme) => {
     if (theme === 'dark') {
@@ -51,6 +52,60 @@ window.toggleTheme = () => {
 
     return window.applyTheme(nextTheme);
 };
+
+window.createDashboardShell = (workspace = 'default') => ({
+    mobileNav: false,
+    desktopSidebarVisible: true,
+    desktopMedia: null,
+
+    init() {
+        this.desktopMedia = window.matchMedia('(min-width: 1024px)');
+
+        const storedState = window.localStorage.getItem(`${DASHBOARD_SIDEBAR_STORAGE_PREFIX}.${workspace}`);
+
+        if (storedState !== null) {
+            this.desktopSidebarVisible = storedState === 'true';
+        }
+
+        const syncViewport = (event) => {
+            this.mobileNav = false;
+        };
+
+        syncViewport(this.desktopMedia);
+
+        if (typeof this.desktopMedia.addEventListener === 'function') {
+            this.desktopMedia.addEventListener('change', syncViewport);
+        } else {
+            this.desktopMedia.addListener(syncViewport);
+        }
+    },
+
+    isDesktop() {
+        return this.desktopMedia?.matches ?? window.matchMedia('(min-width: 1024px)').matches;
+    },
+
+    toggleSidebar() {
+        if (this.isDesktop()) {
+            this.desktopSidebarVisible = !this.desktopSidebarVisible;
+            window.localStorage.setItem(
+                `${DASHBOARD_SIDEBAR_STORAGE_PREFIX}.${workspace}`,
+                String(this.desktopSidebarVisible),
+            );
+
+            return;
+        }
+
+        this.mobileNav = !this.mobileNav;
+    },
+
+    openMobileNav() {
+        this.mobileNav = true;
+    },
+
+    closeMobileNav() {
+        this.mobileNav = false;
+    },
+});
 
 window.initializeTheme = () => {
     const settings = window.__theme || {};

@@ -114,7 +114,20 @@
                     <input type="checkbox" name="settings[marketing_emails]" value="1" class="rounded border-slate-300 text-slate-950 shadow-sm focus:ring-slate-300 dark:border-slate-600 dark:bg-slate-900 dark:text-teal-400 dark:focus:ring-teal-500" @checked((bool) data_get($settings, 'marketing_emails', false))>
                     <span>Receive product and feature updates</span>
                 </label>
+                @if ($user->hasSocialProvider('google'))
+                    <label class="inline-flex items-center gap-3 text-sm text-slate-700 dark:text-slate-200">
+                        <input type="hidden" name="settings[login_with_google]" value="0">
+                        <input type="checkbox" name="settings[login_with_google]" value="1" class="rounded border-slate-300 text-slate-950 shadow-sm focus:ring-slate-300 dark:border-slate-600 dark:bg-slate-900 dark:text-teal-400 dark:focus:ring-teal-500" @checked((bool) data_get($settings, 'login_with_google', false))>
+                        <span>Allow Google login for this account</span>
+                    </label>
+                    <p class="-mt-1 text-xs text-slate-500 dark:text-slate-400">Turn this off if you want the linked Google account to stay connected but not usable for sign-in.</p>
+                @elseif ($siteSettings->google_auth_enabled)
+                    <div class="rounded-2xl border border-dashed border-slate-300 bg-slate-50/80 px-4 py-3 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-900/50 dark:text-slate-300">
+                        Link a Google account from the profile card above to enable Google login for this user.
+                    </div>
+                @endif
             </div>
+            <x-input-error class="mt-2" :messages="$errors->get('settings.login_with_google')" />
         </div>
 
         <div class="flex items-center gap-4">

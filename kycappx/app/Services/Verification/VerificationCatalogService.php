@@ -2,26 +2,20 @@
 
 namespace App\Services\Verification;
 
-use App\Models\ProviderConfig;
 use App\Models\VerificationService;
-use App\Services\Providers\ProviderFeatureService;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
-use Throwable;
 
 class VerificationCatalogService
 {
-    private array $providerRecords = [];
-
-    public function __construct(private ProviderFeatureService $providerFeatures)
+    public function __construct(private IdentityEngineRegistry $identityEngines)
     {
     }
 
     public function definitions(): array
     {
-        return collect(config('services.prembly.products', []))
+        $premblyDefinitions = collect(config('services.prembly.products', []))
             ->mapWithKeys(function (array $product, string $productKey) {
                 $service = data_get($product, 'service', []);
                 $serviceCode = strtoupper((string) data_get($service, 'code', $productKey));
@@ -42,6 +36,14 @@ class VerificationCatalogService
                 ])];
             })
             ->all();
+
+        $catalogAdditions = collect($this->identityEngines->serviceCatalogAdditions())
+            ->mapWithKeys(function (array $definition, string $serviceCode) {
+                return [strtoupper($serviceCode) => $this->normalizeCatalogAddition($serviceCode, $definition)];
+            })
+            ->all();
+
+        return array_replace($premblyDefinitions, $catalogAdditions);
     }
 
     public function definitionFor(VerificationService|string|null $service): ?array
@@ -81,6 +83,8 @@ class VerificationCatalogService
                     'default_price' => (float) data_get($service, 'default_price', 0),
                     'default_cost' => (float) data_get($service, 'default_cost', 0),
                     'required_fields' => $fields,
+                    'engine_preferences' => $this->identityEngines->defaultServicePreferences((string) data_get($service, 'code')),
+                    'response_template' => $this->identityEngines->responseTemplate((string) data_get($service, 'code')),
                 ];
             })
             ->values()
@@ -95,22 +99,7 @@ class VerificationCatalogService
             return false;
         }
 
-        $provider = (string) data_get($definition, 'provider', 'prembly');
-        $productKey = (string) data_get($definition, 'product_key', '');
-        $providerRecord = $this->providerRecord($provider);
-        $providerEnabled = $providerRecord
-            ? (bool) $providerRecord->is_active
-            : $this->providerConfigured($provider);
-
-        if (! $providerEnabled || $productKey === '') {
-            return false;
-        }
-
-        return $this->providerFeatures->isProductEnabled(
-            $provider,
-            $productKey,
-            (bool) data_get($definition, 'required', false)
-        );
+        return collect($this->identityEngines->availableProvidersForService($service))->isNotEmpty();
     }
 
     public function filterLaunchable(Collection $services): Collection
@@ -301,36 +290,33 @@ class VerificationCatalogService
         return $errors;
     }
 
-    private function providerRecord(string $provider): ?ProviderConfig
+    private function normalizeCatalogAddition(string $serviceCode, array $definition): array
     {
-        $provider = strtolower($provider);
+        $service = (array) data_get($definition, 'service', []);
 
-        if (! array_key_exists($provider, $this->providerRecords)) {
-            try {
-                if (! Schema::hasTable('provider_configs')) {
-                    $this->providerRecords[$provider] = null;
-                } else {
-                    $this->providerRecords[$provider] = ProviderConfig::query()
-                        ->where('provider', $provider)
-                        ->first();
-                }
-            } catch (Throwable) {
-                $this->providerRecords[$provider] = null;
-            }
-        }
-
-        return $this->providerRecords[$provider];
-    }
-
-    private function providerConfigured(string $provider): bool
-    {
-        return match (strtolower($provider)) {
-            'prembly' => filled(config('services.prembly.app_id')) && filled(config('services.prembly.secret_key')),
-            'kora' => filled(config('services.kora.secret_key')),
-            'paystack' => filled(config('services.paystack.secret_key')),
-            'squad' => filled(config('services.squad.secret_key')),
-            default => false,
-        };
+        return [
+            'label' => data_get($definition, 'label', Str::headline($serviceCode)),
+            'method' => data_get($definition, 'method', 'POST'),
+            'path' => data_get($definition, 'path'),
+            'docs_url' => data_get($definition, 'docsUrl', data_get($definition, 'docs_url')),
+            'countries' => data_get($definition, 'countries', ['NG']),
+            'required' => (bool) data_get($definition, 'required', true),
+            'normalizer' => data_get($definition, 'normalizer'),
+            'request_body' => data_get($definition, 'requestBody', data_get($definition, 'request_body', [])),
+            'json_payload_fallback' => (bool) data_get($definition, 'jsonPayloadFallback', data_get($definition, 'json_payload_fallback', false)),
+            'one_of' => data_get($definition, 'oneOf', data_get($definition, 'one_of', [])),
+            'notes' => data_get($definition, 'notes'),
+            'service' => [
+                'code' => strtoupper((string) data_get($service, 'code', $serviceCode)),
+                'name' => data_get($service, 'name', data_get($definition, 'label', Str::headline($serviceCode))),
+                'type' => data_get($service, 'type', 'kyc'),
+                'country' => strtoupper((string) data_get($service, 'country', 'NG')),
+                'default_price' => (float) data_get($service, 'defaultPrice', data_get($service, 'default_price', 0)),
+                'default_cost' => (float) data_get($service, 'defaultCost', data_get($service, 'default_cost', 0)),
+                'is_active' => (bool) data_get($service, 'isActive', data_get($service, 'is_active', false)),
+                'featured' => (bool) data_get($service, 'featured', false),
+            ],
+        ];
     }
 
     private function requestBody(array $definition): array

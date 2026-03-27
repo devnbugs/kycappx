@@ -3,16 +3,20 @@
 namespace App\Http\Controllers\Dashboard;
 
 use App\Http\Controllers\Controller;
+use App\Models\VerificationRequest;
 use App\Models\VerificationService;
 use App\Services\Billing\WalletService;
 use App\Services\Kyc\KycStrengthService;
 use App\Services\SiteSettings;
+use App\Services\Verification\IdentityEngineRegistry;
 use App\Services\Verification\VerificationCatalogService;
 use App\Services\Verification\VerificationOrchestrator;
+use App\Services\Verification\VerificationResultPresenter;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 use Throwable;
 
 class VerificationController extends Controller
@@ -23,6 +27,8 @@ class VerificationController extends Controller
         private VerificationOrchestrator $verificationOrchestrator,
         private KycStrengthService $kycStrength,
         private VerificationCatalogService $verificationCatalog,
+        private IdentityEngineRegistry $identityEngines,
+        private VerificationResultPresenter $resultPresenter,
     ) {
     }
 
@@ -32,9 +38,12 @@ class VerificationController extends Controller
             'wallet' => $this->walletService->ensureWallet($request->user()->id),
             'verifications' => $request->user()
                 ->verificationRequests()
-                ->with('service')
+                ->with(['service', 'attempts'])
                 ->latest()
                 ->paginate(10),
+            'providerLabels' => collect($this->identityEngines->providerCodes())
+                ->mapWithKeys(fn (string $provider) => [$provider => $this->identityEngines->publicLabel($provider)])
+                ->all(),
         ]);
     }
 
@@ -66,6 +75,14 @@ class VerificationController extends Controller
             'fieldDefaults' => $this->fieldDefaultsFor($user, $selectedService),
             'discountRate' => $discountRate,
             'selectedPrice' => $selectedService ? $this->priceFor($user, $selectedService) : 0,
+            'serviceEngineVersions' => $services
+                ->mapWithKeys(fn (VerificationService $service) => [
+                    $service->id => collect($this->identityEngines->availableProvidersForService($service))
+                        ->map(fn (string $provider) => $this->identityEngines->publicLabel($provider))
+                        ->values()
+                        ->all(),
+                ])
+                ->all(),
         ]);
     }
 
@@ -124,8 +141,49 @@ class VerificationController extends Controller
         };
 
         return redirect()
-            ->route('verifications.index')
+            ->route('verifications.show', $verificationRequest)
             ->with('status', $message);
+    }
+
+    public function show(Request $request, VerificationRequest $verificationRequest): View
+    {
+        $verification = $this->ownedVerification($request, $verificationRequest);
+
+        return view('dashboard.verifications.show', [
+            'verification' => $verification,
+            'report' => $this->resultPresenter->present($verification, true),
+        ]);
+    }
+
+    public function download(Request $request, VerificationRequest $verificationRequest): StreamedResponse
+    {
+        $verification = $this->ownedVerification($request, $verificationRequest);
+        $report = $this->resultPresenter->present($verification, true);
+        $mode = $this->resolvedPrintMode((string) $request->query('mode', 'standard'), $report['printModes']);
+        $html = view('verifications.print', [
+            'verification' => $verification,
+            'report' => $report,
+            'printMode' => $mode,
+        ])->render();
+        $filename = str_replace('.html', '-'.$mode.'.html', $report['downloadName']);
+
+        return response()->streamDownload(function () use ($html): void {
+            echo $html;
+        }, $filename, [
+            'Content-Type' => 'text/html; charset=UTF-8',
+        ]);
+    }
+
+    public function print(Request $request, VerificationRequest $verificationRequest): View
+    {
+        $verification = $this->ownedVerification($request, $verificationRequest);
+        $report = $this->resultPresenter->present($verification, true);
+
+        return view('verifications.print', [
+            'verification' => $verification,
+            'report' => $report,
+            'printMode' => $this->resolvedPrintMode((string) $request->query('mode', 'standard'), $report['printModes']),
+        ]);
     }
 
     private function rulesFor(VerificationService $service): array
@@ -167,5 +225,17 @@ class VerificationController extends Controller
         $discountRate = $user->currentDiscountRate((float) $this->siteSettings->current()->user_pro_discount_rate);
 
         return round(max(0, (float) $service->default_price * (1 - ($discountRate / 100))), 2);
+    }
+
+    private function ownedVerification(Request $request, VerificationRequest $verificationRequest): VerificationRequest
+    {
+        abort_unless((int) $verificationRequest->user_id === (int) $request->user()->id, 404);
+
+        return $verificationRequest->loadMissing(['service', 'attempts']);
+    }
+
+    private function resolvedPrintMode(string $mode, array $availableModes): string
+    {
+        return in_array($mode, $availableModes, true) ? $mode : $availableModes[0];
     }
 }

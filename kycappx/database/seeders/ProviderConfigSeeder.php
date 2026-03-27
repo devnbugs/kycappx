@@ -29,6 +29,7 @@ class ProviderConfigSeeder extends Seeder
                     'timeout_seconds' => 30,
                     'country_scope' => ['NG'],
                     'default_product' => $premblyProducts->has('bvn_basic') ? 'bvn_basic' : $premblyProducts->keys()->first(),
+                    'publicLabel' => 'v1',
                     'enabled_products' => $premblyEnabledProducts,
                 ],
             ]
@@ -44,6 +45,7 @@ class ProviderConfigSeeder extends Seeder
                     'mode' => 'live',
                     'timeout_seconds' => 30,
                     'default_product' => 'dedicated_accounts',
+                    'publicLabel' => 'v4',
                     'enabled_products' => [
                         'customers' => true,
                         'dedicated_accounts' => true,
@@ -64,10 +66,11 @@ class ProviderConfigSeeder extends Seeder
                 'is_active' => false,
                 'priority' => 3,
                 'config' => [
-                    'channel' => 'payments',
+                    'channel' => 'identity',
                     'mode' => 'live',
                     'timeout_seconds' => 30,
                     'default_product' => 'virtual_accounts',
+                    'publicLabel' => 'v2',
                     'enabled_products' => [
                         'checkout' => true,
                         'bank_transfer' => false,
@@ -95,11 +98,37 @@ class ProviderConfigSeeder extends Seeder
                     'timeout_seconds' => 30,
                     'country_scope' => ['NG'],
                     'default_product' => 'virtual_accounts',
+                    'publicLabel' => 'v5',
                     'enabled_products' => [
                         'virtual_accounts' => true,
                         'webhooks' => true,
                         'sms_messages' => true,
                         'sms_templates' => true,
+                    ],
+                ],
+            ]
+        );
+
+        ProviderConfig::updateOrCreate(
+            ['provider' => 'interswitch'],
+            [
+                'is_active' => false,
+                'priority' => 4,
+                'config' => [
+                    'channel' => 'identity',
+                    'mode' => 'sandbox',
+                    'timeout_seconds' => 30,
+                    'default_product' => 'identity',
+                    'publicLabel' => 'v3',
+                    'enabled_products' => [
+                        'identity' => true,
+                    ],
+                    'verificationRoutes' => [
+                        'VIN_LOOKUP' => [
+                            'productKey' => 'vinLookup',
+                            'endpointPath' => env('INTERSWITCH_VIN_PATH'),
+                            'requestMethod' => env('INTERSWITCH_VIN_METHOD', 'POST'),
+                        ],
                     ],
                 ],
             ]

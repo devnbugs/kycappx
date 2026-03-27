@@ -120,6 +120,41 @@ class User extends Authenticatable
         return filled($this->two_factor_secret) && $this->two_factor_confirmed_at !== null;
     }
 
+    public function hasSocialProvider(string $provider): bool
+    {
+        $provider = strtolower($provider);
+
+        if ($this->relationLoaded('socialAccounts')) {
+            return $this->socialAccounts->contains(
+                fn (SocialAccount $socialAccount) => strtolower($socialAccount->provider) === $provider
+            );
+        }
+
+        return $this->socialAccounts()->where('provider', $provider)->exists();
+    }
+
+    public function googleLoginEnabled(): bool
+    {
+        return (bool) data_get($this->settingsPayload(), 'login_with_google', true);
+    }
+
+    public function socialSignupCompleted(): bool
+    {
+        return (bool) data_get($this->settingsPayload(), 'social_signup_completed', true);
+    }
+
+    public function requiresSocialProfileCompletion(): bool
+    {
+        return $this->hasSocialProvider('google')
+            && ! $this->socialSignupCompleted()
+            && (blank($this->username) || blank($this->phone) || blank($this->timezone));
+    }
+
+    public function mergeSettings(array $overrides): array
+    {
+        return array_merge($this->settingsPayload(), $overrides);
+    }
+
     public function currentDiscountRate(float $default = 0): float
     {
         $userRate = (float) ($this->service_discount_rate ?? 0);
@@ -138,6 +173,7 @@ class User extends Authenticatable
             'monthly_reports' => true,
             'marketing_emails' => false,
             'login_with_google' => true,
+            'social_signup_completed' => true,
         ], $this->settings ?? []);
     }
 }

@@ -104,6 +104,7 @@ class UserManagementController extends Controller
             'settings.security_alerts' => ['nullable', 'boolean'],
             'settings.monthly_reports' => ['nullable', 'boolean'],
             'settings.marketing_emails' => ['nullable', 'boolean'],
+            'settings.login_with_google' => ['nullable', 'boolean'],
             'deactivate_api_keys' => ['nullable', 'boolean'],
             'reset_two_factor' => ['nullable', 'boolean'],
         ]);
@@ -116,11 +117,14 @@ class UserManagementController extends Controller
 
         $this->guardCriticalAdminChanges($request->user(), $user, $validated['status'], $selectedRoles->all());
 
-        $settings = [
+        $settings = $user->mergeSettings([
             'security_alerts' => (bool) data_get($validated, 'settings.security_alerts', false),
             'monthly_reports' => (bool) data_get($validated, 'settings.monthly_reports', false),
             'marketing_emails' => (bool) data_get($validated, 'settings.marketing_emails', false),
-        ];
+            'login_with_google' => $user->hasSocialProvider('google')
+                ? (bool) data_get($validated, 'settings.login_with_google', $user->googleLoginEnabled())
+                : false,
+        ]);
 
         try {
             DB::transaction(function () use ($request, $user, $validated, $selectedRoles, $settings) {

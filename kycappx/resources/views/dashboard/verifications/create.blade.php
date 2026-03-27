@@ -42,6 +42,11 @@
                             <span class="badge-soft {{ optional($selectedService)->id === $service->id ? 'border-white/10 bg-white/10 text-white' : '' }}">
                                 {{ count($service->required_fields ?? []) }} fields
                             </span>
+                            @foreach ($serviceEngineVersions[$service->id] ?? [] as $engineVersion)
+                                <span class="badge-soft {{ optional($selectedService)->id === $service->id ? 'border-white/10 bg-white/10 text-white' : '' }}">
+                                    {{ $engineVersion }}
+                                </span>
+                            @endforeach
                         </div>
                     </a>
                 @empty
@@ -64,6 +69,13 @@
                                 <span class="mt-1 inline-flex items-center rounded-full bg-teal-50 px-3 py-1 text-xs font-semibold text-teal-800 dark:bg-teal-500/10 dark:text-teal-200">{{ rtrim(rtrim(number_format($discountRate, 2), '0'), '.') }}% user discount applied</span>
                             @endif
                         </p>
+                        @if (count($serviceEngineVersions[$selectedService->id] ?? []))
+                            <div class="mt-3 flex flex-wrap gap-2">
+                                @foreach ($serviceEngineVersions[$selectedService->id] as $engineVersion)
+                                    <span class="badge-soft">{{ $engineVersion }}</span>
+                                @endforeach
+                            </div>
+                        @endif
                     </div>
                     <x-ui.status-badge :value="$selectedService->code" tone="info" />
                 </div>
@@ -71,7 +83,7 @@
                 <div class="mt-5 rounded-[1.25rem] border border-slate-200/80 bg-slate-50/80 px-4 py-4 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-300">
                     Saved your KYC bio already?
                     <a href="{{ route('kyc.edit') }}" class="font-semibold text-slate-950 underline underline-offset-4 dark:text-slate-50">Open the KYC page</a>
-                    to keep NIN, BVN, phone, and address details ready for auto-prefill. Verification submits directly to the provider API from this form and returns the outcome immediately.
+                    to keep NIN, BVN, phone, and address details ready for auto-prefill. Verification submits directly to the active identity engine for this service and returns the saved outcome immediately.
                 </div>
 
                 <form method="POST" action="{{ route('verifications.store') }}" class="mt-6 space-y-5">
@@ -118,7 +130,7 @@
                     <p class="section-kicker">Next Step</p>
                     <h2 class="mt-3 text-2xl font-semibold text-slate-950 dark:text-slate-50">Pick a service to reveal the correct form.</h2>
                     <p class="mt-3 max-w-lg text-sm leading-6 text-slate-600 dark:text-slate-300">
-                        Each service has its own payload requirements. Choose one from the left and we will show the right input fields and pricing.
+                        Each service has its own payload requirements and response layout. Choose one from the left and we will show the right input fields, pricing, and available engine version(s).
                     </p>
                 </div>
             @endif

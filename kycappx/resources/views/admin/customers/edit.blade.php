@@ -150,6 +150,15 @@
                         <span>Marketing and feature updates</span>
                     </label>
                     <label class="inline-flex items-center gap-3 text-sm text-slate-700 dark:text-slate-200">
+                        <input type="hidden" name="settings[login_with_google]" value="0">
+                        <input type="checkbox" name="settings[login_with_google]" value="1" class="rounded border-slate-300 text-slate-950 shadow-sm focus:ring-slate-300 dark:border-slate-600 dark:bg-slate-900 dark:text-teal-400 dark:focus:ring-teal-500" @checked((bool) data_get($settings, 'login_with_google', false)) @disabled(! $customer->hasSocialProvider('google'))>
+                        <span>Allow Google login</span>
+                    </label>
+                    @if (! $customer->hasSocialProvider('google'))
+                        <p class="-mt-1 text-xs text-slate-500 dark:text-slate-400">This stays disabled until the user links a Google account from their profile.</p>
+                    @endif
+                    <x-input-error :messages="$errors->get('settings.login_with_google')" class="mt-1" />
+                    <label class="inline-flex items-center gap-3 text-sm text-slate-700 dark:text-slate-200">
                         <input type="hidden" name="deactivate_api_keys" value="0">
                         <input type="checkbox" name="deactivate_api_keys" value="1" class="rounded border-slate-300 text-slate-950 shadow-sm focus:ring-slate-300 dark:border-slate-600 dark:bg-slate-900 dark:text-teal-400 dark:focus:ring-teal-500">
                         <span>Deactivate all current API keys on save</span>

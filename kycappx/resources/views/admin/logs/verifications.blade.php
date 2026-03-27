@@ -19,6 +19,7 @@
                         <th class="px-6 py-4 text-left font-semibold">Price</th>
                         <th class="px-6 py-4 text-left font-semibold">Status</th>
                         <th class="px-6 py-4 text-left font-semibold">Submitted</th>
+                        <th class="px-6 py-4 text-left font-semibold">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -30,7 +31,14 @@
                             </td>
                             <td class="px-6 py-4 text-slate-600 dark:text-slate-300">{{ $verification->service?->name ?? 'Unknown service' }}</td>
                             <td class="px-6 py-4 font-mono text-xs text-slate-700 dark:text-slate-300">{{ $verification->reference }}</td>
-                            <td class="px-6 py-4 text-slate-600 dark:text-slate-300">{{ $verification->provider_used ?: 'Awaiting provider' }}</td>
+                            <td class="px-6 py-4 text-slate-600 dark:text-slate-300">
+                                @if ($verification->provider_used)
+                                    {{ data_get($providerLabels, strtolower((string) $verification->provider_used).'.admin', strtoupper((string) $verification->provider_used)) }}
+                                    <span class="text-xs text-slate-400 dark:text-slate-500">· {{ data_get($providerLabels, strtolower((string) $verification->provider_used).'.public') }}</span>
+                                @else
+                                    Awaiting engine
+                                @endif
+                            </td>
                             <td class="px-6 py-4 font-semibold text-slate-950 dark:text-slate-50">NGN {{ number_format((float) $verification->customer_price, 2) }}</td>
                             <td class="px-6 py-4">
                                 <x-ui.status-badge
@@ -44,10 +52,15 @@
                                 />
                             </td>
                             <td class="px-6 py-4 text-slate-600 dark:text-slate-300">{{ $verification->created_at?->format('M d, Y H:i') }}</td>
+                            <td class="px-6 py-4">
+                                <a href="{{ route('admin.logs.verifications.show', $verification) }}" class="text-sm font-semibold text-slate-950 underline underline-offset-4 dark:text-slate-50">
+                                    View Details
+                                </a>
+                            </td>
                         </tr>
                     @empty
                         <tr class="table-row">
-                            <td colspan="7" class="px-6 py-10 text-center text-slate-500 dark:text-slate-400">No verification logs have been recorded yet.</td>
+                            <td colspan="8" class="px-6 py-10 text-center text-slate-500 dark:text-slate-400">No verification logs have been recorded yet.</td>
                         </tr>
                     @endforelse
                 </tbody>

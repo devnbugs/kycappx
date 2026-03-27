@@ -17,6 +17,8 @@ class VerificationService extends Model
         'default_price',
         'default_cost',
         'required_fields',
+        'engine_preferences',
+        'response_template',
     ];
 
     protected function casts(): array
@@ -26,6 +28,7 @@ class VerificationService extends Model
             'default_price' => 'decimal:2',
             'default_cost' => 'decimal:2',
             'required_fields' => 'array',
+            'engine_preferences' => 'array',
         ];
     }
 

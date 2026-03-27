@@ -43,6 +43,7 @@ class ProfileUpdateRequest extends FormRequest
             'settings.security_alerts' => ['nullable', 'boolean'],
             'settings.monthly_reports' => ['nullable', 'boolean'],
             'settings.marketing_emails' => ['nullable', 'boolean'],
+            'settings.login_with_google' => ['nullable', 'boolean'],
         ];
     }
 }

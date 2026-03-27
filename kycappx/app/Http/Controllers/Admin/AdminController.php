@@ -12,13 +12,18 @@ use App\Models\VerificationRequest;
 use App\Models\VerificationService;
 use App\Models\WebhookLog;
 use App\Services\SiteSettings;
+use App\Services\Verification\IdentityEngineRegistry;
+use App\Services\Verification\VerificationResultPresenter;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Cache;
 use Spatie\Permission\Models\Role;
 
 class AdminController extends Controller
 {
-    public function __construct(private SiteSettings $siteSettings)
+    public function __construct(
+        private SiteSettings $siteSettings,
+        private IdentityEngineRegistry $identityEngines,
+    )
     {
     }
 
@@ -86,9 +91,29 @@ class AdminController extends Controller
     {
         return view('admin.logs.verifications', [
             'verifications' => VerificationRequest::query()
-                ->with(['user', 'service'])
+                ->with(['user', 'service', 'attempts'])
                 ->latest()
                 ->paginate(15),
+            'providerLabels' => collect($this->identityEngines->providerCodes())
+                ->mapWithKeys(fn (string $provider) => [
+                    $provider => [
+                        'admin' => $this->identityEngines->adminLabel($provider),
+                        'public' => $this->identityEngines->publicLabel($provider),
+                    ],
+                ])
+                ->all(),
+        ]);
+    }
+
+    public function verificationLogShow(
+        VerificationRequest $verificationRequest,
+        VerificationResultPresenter $resultPresenter
+    ): View {
+        $verification = $verificationRequest->loadMissing(['user', 'service', 'attempts']);
+
+        return view('admin.logs.verification-show', [
+            'verification' => $verification,
+            'report' => $resultPresenter->present($verification, false),
         ]);
     }
 

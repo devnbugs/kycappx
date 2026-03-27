@@ -154,10 +154,14 @@
     }
 
     .logo-mark {
-        @apply inline-flex h-12 w-12 items-center justify-center rounded-2xl text-sm font-semibold shadow-lg;
+        @apply inline-flex h-12 w-12 items-center justify-center overflow-hidden rounded-2xl border shadow-lg;
         background:
             linear-gradient(145deg, rgba(15, 118, 110, 0.94), rgba(15, 23, 42, 0.92));
-        color: white;
+        border-color: rgba(255, 255, 255, 0.12);
+    }
+
+    .logo-mark__image {
+        @apply block h-full w-full object-cover;
     }
 
     .shell {
@@ -169,9 +173,51 @@
         color: #f8fafc;
     }
 
+    .dashboard-shell {
+        --dashboard-sidebar-width: 18rem;
+        grid-template-columns: minmax(0, 1fr);
+        align-items: start;
+    }
+
+    @media (min-width: 1024px) {
+        .dashboard-shell {
+            grid-template-columns: minmax(0, var(--dashboard-sidebar-width)) minmax(0, 1fr);
+        }
+    }
+
+    .dashboard-sidebar {
+        @apply sticky top-3 self-start overflow-y-auto;
+        max-height: calc(100vh - 1.5rem);
+    }
+
     .shell-header {
         background: color-mix(in srgb, var(--ui-panel-strong) 86%, transparent);
         border-color: var(--ui-border);
+    }
+
+    .shell-header-nav {
+        @apply flex gap-2 overflow-x-auto pb-1;
+        scrollbar-width: thin;
+    }
+
+    .shell-header-link {
+        @apply inline-flex items-center gap-2 whitespace-nowrap rounded-full border px-3 py-2 text-sm font-semibold transition;
+        border-color: var(--ui-border);
+        background: color-mix(in srgb, var(--ui-panel) 86%, transparent);
+        color: var(--ui-ink-soft);
+    }
+
+    .shell-header-link:hover {
+        background: var(--ui-panel-strong);
+        color: var(--ui-ink);
+        transform: translateY(-1px);
+    }
+
+    .shell-header-link--active {
+        background: var(--ui-sidebar);
+        border-color: transparent;
+        box-shadow: 0 16px 36px rgba(15, 23, 42, 0.18);
+        color: #f8fafc;
     }
 
     .hero-tile {

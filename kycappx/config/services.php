@@ -150,6 +150,20 @@ return [
         ],
     ],
 
+    'interswitch' => [
+        'base_url' => env('INTERSWITCH_BASE_URL', 'https://qa.interswitchng.com'),
+        'client_id' => env('INTERSWITCH_CLIENT_ID'),
+        'client_secret' => env('INTERSWITCH_CLIENT_SECRET'),
+        'token_url' => env('INTERSWITCH_TOKEN_URL', 'https://qa.interswitchng.com/passport/oauth/token'),
+        'products' => [
+            'identity' => [
+                'label' => 'Identity Marketplace',
+                'description' => 'Run API Marketplace identity checks such as VIN or vehicle registry lookups.',
+                'required' => true,
+            ],
+        ],
+    ],
+
     'prembly' => [
         'base_url' => env('PREMBLY_BASE_URL', 'https://api.prembly.com'),
         'app_id' => env('PREMBLY_APP_ID'),

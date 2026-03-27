@@ -22,7 +22,7 @@
     <x-dashboard.verification-launchpad
         :services="$workspaceServices"
         title="Start Another Verification"
-        copy="Open a featured check from here or head into the full catalog for the rest of the Prembly stack."
+        copy="Open a featured check from here or head into the full catalog for the rest of the identity services available to your workspace."
         button-label="Full Catalog"
     />
 
@@ -37,6 +37,7 @@
                         <th class="px-6 py-4 text-left font-semibold">Provider</th>
                         <th class="px-6 py-4 text-left font-semibold">Price</th>
                         <th class="px-6 py-4 text-left font-semibold">Submitted</th>
+                        <th class="px-6 py-4 text-left font-semibold">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -58,13 +59,18 @@
                                     }"
                                 />
                             </td>
-                            <td class="px-6 py-4 text-slate-600 dark:text-slate-300">{{ $verification->provider_used ?: 'Awaiting provider' }}</td>
+                            <td class="px-6 py-4 text-slate-600 dark:text-slate-300">{{ data_get($providerLabels, strtolower((string) $verification->provider_used), 'Awaiting engine') }}</td>
                             <td class="px-6 py-4 font-semibold text-slate-950 dark:text-slate-50">NGN {{ number_format((float) $verification->customer_price, 2) }}</td>
                             <td class="px-6 py-4 text-slate-600 dark:text-slate-300">{{ $verification->created_at?->format('M d, Y H:i') }}</td>
+                            <td class="px-6 py-4">
+                                <a href="{{ route('verifications.show', $verification) }}" class="text-sm font-semibold text-slate-950 underline underline-offset-4 dark:text-slate-50">
+                                    View Response
+                                </a>
+                            </td>
                         </tr>
                     @empty
                         <tr class="table-row">
-                            <td colspan="6" class="px-6 py-10 text-center text-slate-500 dark:text-slate-400">No verification requests have been submitted yet.</td>
+                            <td colspan="7" class="px-6 py-10 text-center text-slate-500 dark:text-slate-400">No verification requests have been submitted yet.</td>
                         </tr>
                     @endforelse
                 </tbody>

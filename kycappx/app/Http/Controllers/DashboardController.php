@@ -13,6 +13,7 @@ use App\Services\Billing\WalletService;
 use App\Services\Kyc\KycStrengthService;
 use App\Services\Providers\ProviderFeatureService;
 use App\Services\SiteSettings;
+use App\Services\Verification\IdentityEngineRegistry;
 use App\Services\Verification\VerificationCatalogService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
@@ -26,6 +27,7 @@ class DashboardController extends Controller
         private ProviderFeatureService $providerFeatures,
         private SiteSettings $siteSettings,
         private VerificationCatalogService $verificationCatalog,
+        private IdentityEngineRegistry $identityEngines,
     ) {
     }
 
@@ -81,6 +83,9 @@ class DashboardController extends Controller
             'virtualAccountProviders' => $this->virtualAccounts->providers(),
             'discountRate' => $user->currentDiscountRate((float) $siteSettings->user_pro_discount_rate),
             'kycSnapshot' => $this->kycStrength->snapshot($user),
+            'verificationProviderLabels' => collect($this->identityEngines->providerCodes())
+                ->mapWithKeys(fn (string $provider) => [$provider => $this->identityEngines->publicLabel($provider)])
+                ->all(),
         ]);
     }
 

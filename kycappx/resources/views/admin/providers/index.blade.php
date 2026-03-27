@@ -34,6 +34,7 @@
         @forelse ($providerConfigs as $config)
             @php($catalog = config("services.{$config->provider}.products", []))
             @php($editable = $canManageProviders ?? false)
+            @php($isIdentityProvider = in_array($config->provider, $identityProviderCodes ?? [], true))
             <form method="POST" action="{{ route('admin.providers.update', $config) }}" class="surface-card p-6 sm:p-8">
                 @csrf
                 @method('PUT')
@@ -41,7 +42,10 @@
                 <div class="flex items-start justify-between gap-3">
                     <div>
                         <p class="section-kicker">Provider</p>
-                        <h2 class="mt-3 text-2xl font-semibold text-slate-950 dark:text-slate-50">{{ strtoupper($config->provider) }}</h2>
+                        <h2 class="mt-3 text-2xl font-semibold text-slate-950 dark:text-slate-50">{{ data_get($providerLabels, $config->provider.'.admin', strtoupper($config->provider)) }}</h2>
+                        @if ($isIdentityProvider)
+                            <div class="mt-2 text-xs text-slate-500 dark:text-slate-400">User-facing version: {{ data_get($providerLabels, $config->provider.'.public', data_get($config->config, 'publicLabel', 'v0')) }}</div>
+                        @endif
                     </div>
                     <x-ui.status-badge :value="$config->is_active ? 'Active' : 'Standby'" :tone="$config->is_active ? 'success' : 'warning'" />
                 </div>
@@ -76,6 +80,14 @@
                         <x-input-label :for="'notes-'.$config->id" value="Notes" />
                         <x-text-input :id="'notes-'.$config->id" name="notes" type="text" class="mt-2" :value="old('notes', data_get($config->config, 'notes'))" placeholder="Fallback or operational notes" @disabled(! $editable) />
                     </div>
+                    @if ($isIdentityProvider)
+                        <div>
+                            <x-input-label :for="'public-label-'.$config->id" value="Public Version Label" />
+                            <x-text-input :id="'public-label-'.$config->id" name="publicLabel" type="text" class="mt-2" :value="old('publicLabel', data_get($config->config, 'publicLabel', data_get($providerLabels, $config->provider.'.public')))" placeholder="v1" @disabled(! $editable) />
+                            <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">Customers only see this version label, not the provider name.</p>
+                            <x-input-error class="mt-2" :messages="$errors->get('publicLabel')" />
+                        </div>
+                    @endif
                 </div>
 
                 <div class="mt-5">
@@ -134,6 +146,21 @@
                         @endforeach
                     </div>
                 </div>
+
+                @if ($isIdentityProvider)
+                    <div class="mt-6">
+                        <x-input-label :for="'routes-'.$config->id" value="Verification Route Overrides (JSON)" />
+                        <textarea
+                            id="{{ 'routes-'.$config->id }}"
+                            name="verificationRoutesJson"
+                            rows="10"
+                            class="mt-2 w-full rounded-[1.5rem] border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+                            @disabled(! $editable)
+                        >{{ old('verificationRoutesJson', json_encode(data_get($config->config, 'verificationRoutes', []), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)) }}</textarea>
+                        <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">Use this when a service needs a custom endpoint path, method, payload key, or success field override.</p>
+                        <x-input-error class="mt-2" :messages="$errors->get('verificationRoutesJson')" />
+                    </div>
+                @endif
 
                 <div class="mt-6 flex flex-wrap gap-3">
                     <x-ui.button type="submit" :disabled="! $editable">Save Provider</x-ui.button>

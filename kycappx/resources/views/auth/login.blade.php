@@ -15,11 +15,10 @@
         <x-auth-session-status :status="session('status')" />
 
         @if ($siteSettings->google_auth_enabled && filled(config('services.google.client_id')) && filled(config('services.google.client_secret')))
-            <a href="{{ route('social.redirect', 'google') }}" class="block">
-                <flux:button variant="outline" class="w-full justify-center" icon="globe-alt">
-                    Continue with Google
-                </flux:button>
-            </a>
+            <x-auth.google-button
+                :href="route('social.redirect', ['provider' => 'google', 'intent' => 'login'])"
+                label="Continue with Google"
+            />
 
             <div class="flex items-center gap-3 text-xs uppercase tracking-[0.28em] text-slate-400">
                 <div class="h-px flex-1 bg-slate-200 dark:bg-white/10"></div>
